@@ -58,9 +58,27 @@ Open http://localhost:3000, then create an account at `/signup` and sign in at `
 
 ## Admin dashboard
 
-`/admin` is restricted to `role = 'admin'`. It shows counts for employees, departments, positions, users, and pending leave requests, plus a user table where an admin can change roles and disable accounts. An admin cannot edit their own row, so they cannot lock themselves out.
+`/admin` is restricted to `role = 'admin'`. It shows counts for employees, departments, positions, users, and pending leave requests, plus a user table where an admin can:
 
-Role changes take effect on the target user's very next request, because `getCurrentUser()` re-reads `role` and `is_active` from the database instead of trusting the cookie.
+- change a user's role
+- enable or disable an account
+- **set a new password for a user** (bcrypt-hashed, same rules as signup: 8+ characters with a letter and a number)
+
+An admin cannot edit their own row, so they cannot lock themselves out. Share a reset password with the user directly — there is no email delivery.
+
+Role changes and deactivations take effect on the target user's very next request, because `getCurrentUser()` re-reads `role` and `is_active` from the database instead of trusting the cookie. A password reset does **not** end the target's existing session; see the note below.
+
+### Password resets do not end existing sessions
+
+Sessions are stateless: the cookie holds a signed user id valid for 7 days. Changing `password_hash` does not invalidate an already-issued cookie, so if the account was compromised, the intruder keeps access until the cookie expires.
+
+To close that gap, add a token version to the user table, include it in the session cookie, and reject cookies whose version is stale:
+
+```sql
+ALTER TABLE "user" ADD COLUMN session_version integer NOT NULL DEFAULT 0;
+```
+
+Then bump `session_version` on password reset and compare it in `getCurrentUser()`. Until then, disable the account instead — disabling takes effect immediately.
 
 ### Promoting the first admin
 
