@@ -1,15 +1,15 @@
 "use server";
 
-import * as z from "zod";
-import bcrypt from "bcryptjs";
-import { redirect } from "next/navigation";
 import { pool } from "@/lib/db";
-import { createSession, deleteSession } from "@/lib/session";
 import {
   LoginFormSchema,
   SignupFormSchema,
   type AuthFormState,
 } from "@/lib/definitions";
+import { createSession, deleteSession } from "@/lib/session";
+import bcrypt from "bcryptjs";
+import { redirect } from "next/navigation";
+import * as z from "zod";
 
 const DEFAULT_ROLE = "employee";
 const BCRYPT_ROUNDS = 10;

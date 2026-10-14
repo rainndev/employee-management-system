@@ -10,6 +10,8 @@ Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + PostgreSQL (`pg`).
 
 ## 1. Create the database and tables
 
+> **Already have these tables?** Skip this section and jump to step 2. Make sure your existing `"user"` table has the columns the app uses: `id`, `email`, `password_hash`, `role`, `is_active`, `created_at`.
+
 Open **pgAdmin 4** and connect to your PostgreSQL server.
 
 1. Create the database: right-click **Databases** → **Create** → **Database...** → name it `ems` → **Save**.
