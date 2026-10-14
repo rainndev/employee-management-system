@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Employee Management System
 
-## Getting Started
+Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + PostgreSQL (`pg`).
 
-First, run the development server:
+## Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 20+
+- pnpm
+- PostgreSQL 13+ (pgAdmin 4)
+
+## 1. Create the database and tables
+
+Open **pgAdmin 4** and connect to your PostgreSQL server.
+
+1. Create the database: right-click **Databases** → **Create** → **Database...** → name it `ems` → **Save**.
+2. Open the Query Tool on `ems`: right-click the `ems` database → **Query Tool**.
+3. Open `db/schema.sql` (File → Open, or paste it in) and press **F5** to execute.
+4. Verify the tables: expand `ems` → **Schemas** → **public** → **Tables**. You should see 8 tables: `department`, `position`, `user`, `leave_type`, `employee`, `attendance`, `leave_request`, `leave_balance`.
+
+> `"user"` is a reserved keyword in PostgreSQL, so it must always be double-quoted in SQL: `SELECT * FROM "user";`
+
+Want to check with SQL instead of the tree? Run `\dt` in the Query Tool to list all tables.
+
+## 2. Configure environment variables
+
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/ems
+SESSION_SECRET=<a 32-byte base64 secret>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Generate a secret with:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If your Postgres password contains special characters, URL-encode them in `DATABASE_URL`.
 
-## Learn More
+## 3. Run the app
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm install
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open http://localhost:3000, then create an account at `/signup` and sign in at `/login`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Authentication
 
-## Deploy on Vercel
+- **Signup** (`/signup`) inserts into `"user"` (`email`, `password_hash`, `role`) with bcrypt-hashed passwords. New accounts get the `employee` role.
+- **Login** (`/login`) verifies the bcrypt hash and rejects disabled accounts (`is_active = false`).
+- **Session** is a signed JWT (HS256, `jose`) stored in an `httpOnly` cookie named `session`, valid for 7 days.
+- **Dashboard** (`/dashboard`) reads the session via the data access layer in `src/lib/dal.ts`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Key files
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path                      | Purpose                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| `db/schema.sql`           | Full PostgreSQL schema                                   |
+| `src/lib/db.ts`           | Shared `pg` connection pool                              |
+| `src/lib/session.ts`      | JWT sign/verify and session cookie helpers               |
+| `src/lib/dal.ts`          | `verifySession()` / `getCurrentUser()` data access layer |
+| `src/lib/definitions.ts`  | Zod schemas and form state types                         |
+| `src/app/actions/auth.ts` | `signup`, `login`, `logout` Server Actions               |
+
+## Scripts
+
+```bash
+pnpm dev          # development server
+pnpm build        # production build
+pnpm start        # run the production build
+pnpm lint         # ESLint
+pnpm format       # Prettier (with Tailwind class sorting)
+pnpm format:check # Prettier check
+```
