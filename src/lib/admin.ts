@@ -1,0 +1,70 @@
+import "server-only";
+
+import { pool } from "@/lib/db";
+import type { Role } from "@/lib/roles";
+
+export type AdminStats = {
+  employees: number;
+  departments: number;
+  positions: number;
+  users: number;
+  pendingLeaveRequests: number;
+};
+
+export type AdminUserRow = {
+  id: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: string;
+};
+
+const USER_LIST_LIMIT = 100;
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const { rows } = await pool.query<{
+    employees: number;
+    departments: number;
+    positions: number;
+    users: number;
+    pending_leave_requests: number;
+  }>(`
+    SELECT
+      (SELECT count(*) FROM employee WHERE deleted_at IS NULL)::int AS employees,
+      (SELECT count(*) FROM department WHERE deleted_at IS NULL)::int AS departments,
+      (SELECT count(*) FROM position WHERE deleted_at IS NULL)::int AS positions,
+      (SELECT count(*) FROM "user")::int AS users,
+      (SELECT count(*) FROM leave_request WHERE status = 'pending')::int AS pending_leave_requests
+  `);
+
+  const row = rows[0];
+
+  return {
+    employees: row.employees,
+    departments: row.departments,
+    positions: row.positions,
+    users: row.users,
+    pendingLeaveRequests: row.pending_leave_requests,
+  };
+}
+
+export async function listUsers(): Promise<AdminUserRow[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    email: string;
+    role: string;
+    is_active: boolean;
+    created_at: Date;
+  }>(
+    'SELECT id, email, role, is_active, created_at FROM "user" ORDER BY created_at DESC LIMIT $1',
+    [USER_LIST_LIMIT]
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    role: row.role as Role,
+    isActive: row.is_active,
+    createdAt: row.created_at.toISOString().slice(0, 10),
+  }));
+}

@@ -54,7 +54,7 @@ export async function signup(
     return { message: "Could not create your account. Please try again." };
   }
 
-  await createSession(userId, DEFAULT_ROLE);
+  await createSession(userId);
   redirect("/dashboard");
 }
 
@@ -75,9 +75,8 @@ export async function login(
   const { rows } = await pool.query<{
     id: string;
     password_hash: string;
-    role: string;
     is_active: boolean;
-  }>('SELECT id, password_hash, role, is_active FROM "user" WHERE email = $1', [
+  }>('SELECT id, password_hash, is_active FROM "user" WHERE email = $1', [
     email,
   ]);
 
@@ -93,7 +92,7 @@ export async function login(
     return { message: "This account is disabled." };
   }
 
-  await createSession(user.id, user.role);
+  await createSession(user.id);
   redirect("/dashboard");
 }
 

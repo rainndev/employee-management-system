@@ -8,9 +8,11 @@ const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 const encodedKey = new TextEncoder().encode(process.env.SESSION_SECRET);
 
+// Only the user id lives in the token. The role is read from the database on
+// every request, so a role change takes effect immediately instead of lingering
+// in the cookie until it expires.
 type SessionPayload = {
   userId: string;
-  role: string;
 };
 
 async function encrypt(payload: SessionPayload) {
@@ -31,22 +33,19 @@ async function decrypt(session: string | undefined = "") {
       algorithms: ["HS256"],
     });
 
-    if (
-      typeof payload.userId !== "string" ||
-      typeof payload.role !== "string"
-    ) {
+    if (typeof payload.userId !== "string") {
       return null;
     }
 
-    return { userId: payload.userId, role: payload.role };
+    return { userId: payload.userId };
   } catch {
     return null;
   }
 }
 
-export async function createSession(userId: string, role: string) {
+export async function createSession(userId: string) {
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  const session = await encrypt({ userId, role });
+  const session = await encrypt({ userId });
   const cookieStore = await cookies();
 
   cookieStore.set(COOKIE_NAME, session, {
