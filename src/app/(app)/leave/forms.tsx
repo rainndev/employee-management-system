@@ -1,10 +1,20 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 import type { Option } from "@/lib/employees";
 import type { LeaveType } from "@/lib/leave";
+import type { ActionState } from "@/lib/definitions";
 import { createLeaveRequestAction } from "./actions";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,122 +51,146 @@ export function LeaveRequestForm({
   leaveTypes: LeaveType[];
   employees?: Option[];
 }) {
-  const [state, action, pending] = useActionState(
-    createLeaveRequestAction,
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState<ActionState, FormData>(
+    async (previous, formData) => {
+      const next = await createLeaveRequestAction(previous, formData);
+      if (next?.success) {
+        setOpen(false);
+      }
+      return next;
+    },
     undefined
   );
   const uid = useId();
   const fieldId = (name: string) => `${uid}-${name}`;
 
   return (
-    <form action={action} className="flex flex-col gap-4">
-      {employees && (
-        <Field
-          label="Employee"
-          htmlFor={fieldId("employeeId")}
-          error={state?.errors?.employeeId}
-        >
-          <NativeSelect
-            id={fieldId("employeeId")}
-            name="employeeId"
-            defaultValue=""
-            className="w-full"
-            aria-invalid={Boolean(state?.errors?.employeeId)}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>New leave request</Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New leave request</DialogTitle>
+          <DialogDescription>
+            Requests start as pending and need an approver.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form action={action} className="flex flex-col gap-4">
+          {employees && (
+            <Field
+              label="Employee"
+              htmlFor={fieldId("employeeId")}
+              error={state?.errors?.employeeId}
+            >
+              <NativeSelect
+                id={fieldId("employeeId")}
+                name="employeeId"
+                defaultValue=""
+                className="w-full"
+                aria-invalid={Boolean(state?.errors?.employeeId)}
+              >
+                <NativeSelectOption value="">
+                  — Select employee —
+                </NativeSelectOption>
+                {employees.map((option) => (
+                  <NativeSelectOption key={option.id} value={option.id}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+          )}
+
+          <Field
+            label="Leave type"
+            htmlFor={fieldId("leaveTypeId")}
+            error={state?.errors?.leaveTypeId}
           >
-            <NativeSelectOption value="">
-              — Select employee —
-            </NativeSelectOption>
-            {employees.map((option) => (
-              <NativeSelectOption key={option.id} value={option.id}>
-                {option.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-      )}
+            <NativeSelect
+              id={fieldId("leaveTypeId")}
+              name="leaveTypeId"
+              defaultValue=""
+              className="w-full"
+              aria-invalid={Boolean(state?.errors?.leaveTypeId)}
+            >
+              <NativeSelectOption value="">— Select type —</NativeSelectOption>
+              {leaveTypes.map((type) => (
+                <NativeSelectOption key={type.id} value={type.id}>
+                  {type.name}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
 
-      <Field
-        label="Leave type"
-        htmlFor={fieldId("leaveTypeId")}
-        error={state?.errors?.leaveTypeId}
-      >
-        <NativeSelect
-          id={fieldId("leaveTypeId")}
-          name="leaveTypeId"
-          defaultValue=""
-          className="w-full"
-          aria-invalid={Boolean(state?.errors?.leaveTypeId)}
-        >
-          <NativeSelectOption value="">— Select type —</NativeSelectOption>
-          {leaveTypes.map((type) => (
-            <NativeSelectOption key={type.id} value={type.id}>
-              {type.name}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </Field>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field
+              label="Start date"
+              htmlFor={fieldId("startDate")}
+              error={state?.errors?.startDate}
+            >
+              <Input
+                id={fieldId("startDate")}
+                name="startDate"
+                type="date"
+                aria-invalid={Boolean(state?.errors?.startDate)}
+              />
+            </Field>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field
-          label="Start date"
-          htmlFor={fieldId("startDate")}
-          error={state?.errors?.startDate}
-        >
-          <Input
-            id={fieldId("startDate")}
-            name="startDate"
-            type="date"
-            aria-invalid={Boolean(state?.errors?.startDate)}
-          />
-        </Field>
+            <Field
+              label="End date"
+              htmlFor={fieldId("endDate")}
+              error={state?.errors?.endDate}
+            >
+              <Input
+                id={fieldId("endDate")}
+                name="endDate"
+                type="date"
+                aria-invalid={Boolean(state?.errors?.endDate)}
+              />
+            </Field>
 
-        <Field
-          label="End date"
-          htmlFor={fieldId("endDate")}
-          error={state?.errors?.endDate}
-        >
-          <Input
-            id={fieldId("endDate")}
-            name="endDate"
-            type="date"
-            aria-invalid={Boolean(state?.errors?.endDate)}
-          />
-        </Field>
+            <Field
+              label="Days"
+              htmlFor={fieldId("days")}
+              error={state?.errors?.days}
+            >
+              <Input
+                id={fieldId("days")}
+                name="days"
+                type="number"
+                min="0.5"
+                step="0.5"
+                defaultValue="1"
+                aria-invalid={Boolean(state?.errors?.days)}
+              />
+            </Field>
+          </div>
 
-        <Field
-          label="Days"
-          htmlFor={fieldId("days")}
-          error={state?.errors?.days}
-        >
-          <Input
-            id={fieldId("days")}
-            name="days"
-            type="number"
-            min="0.5"
-            step="0.5"
-            defaultValue="1"
-            aria-invalid={Boolean(state?.errors?.days)}
-          />
-        </Field>
-      </div>
+          <Field
+            label="Reason"
+            htmlFor={fieldId("reason")}
+            error={state?.errors?.reason}
+          >
+            <Textarea
+              id={fieldId("reason")}
+              name="reason"
+              aria-invalid={Boolean(state?.errors?.reason)}
+            />
+          </Field>
 
-      <Field
-        label="Reason"
-        htmlFor={fieldId("reason")}
-        error={state?.errors?.reason}
-      >
-        <Textarea
-          id={fieldId("reason")}
-          name="reason"
-          aria-invalid={Boolean(state?.errors?.reason)}
-        />
-      </Field>
+          <FormFeedback state={state} />
 
-      <FormFeedback state={state} />
-
-      <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Submitting..." : "Submit request"}
-      </Button>
-    </form>
+          <DialogFooter>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Submitting..." : "Submit request"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

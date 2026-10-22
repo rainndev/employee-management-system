@@ -5,13 +5,6 @@ import { canManage } from "@/lib/roles";
 import { listDepartments } from "@/lib/departments";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -45,28 +38,17 @@ async function Content() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Departments</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {manage
-            ? "Create, rename, and remove departments."
-            : "Departments in the organisation."}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Departments</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {manage
+              ? "Create, rename, and remove departments."
+              : "Departments in the organisation."}
+          </p>
+        </div>
+        {manage && <DepartmentForm />}
       </div>
-
-      {manage && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add department</CardTitle>
-            <CardDescription>
-              Names must be unique among active departments.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DepartmentForm />
-          </CardContent>
-        </Card>
-      )}
 
       <div className="rounded-xl border">
         <Table>
@@ -97,16 +79,8 @@ async function Content() {
                 </TableCell>
                 {manage && (
                   <TableCell>
-                    <div className="flex flex-col items-start gap-2">
-                      <details className="w-full">
-                        <summary className="cursor-pointer text-sm underline">
-                          Edit
-                        </summary>
-                        <div className="mt-3 w-72 rounded-lg border bg-muted/40 p-3">
-                          <DepartmentForm department={department} />
-                        </div>
-                      </details>
-
+                    <div className="flex items-center gap-2">
+                      <DepartmentForm department={department} />
                       <form action={deleteDepartment}>
                         <input type="hidden" name="id" value={department.id} />
                         <Button type="submit" variant="destructive" size="sm">

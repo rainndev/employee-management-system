@@ -12,7 +12,6 @@ import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -72,17 +71,25 @@ async function Content() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Leave requests
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {manage
-            ? "File requests for anyone and approve or reject pending ones."
-            : approveAll
-              ? "Pending requests you can approve or reject."
-              : "Your own leave requests."}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Leave requests
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {manage
+              ? "File requests for anyone and approve or reject pending ones."
+              : approveAll
+                ? "Pending requests you can approve or reject."
+                : "Your own leave requests."}
+          </p>
+        </div>
+        {canFileOwn && (
+          <LeaveRequestForm
+            leaveTypes={leaveTypes}
+            employees={manage ? employees : undefined}
+          />
+        )}
       </div>
 
       {approveAll && !myEmployeeId && (
@@ -95,23 +102,7 @@ async function Content() {
         </Alert>
       )}
 
-      {canFileOwn ? (
-        <Card>
-          <CardContent>
-            <details>
-              <summary className="cursor-pointer text-sm font-medium">
-                New leave request
-              </summary>
-              <div className="mt-4">
-                <LeaveRequestForm
-                  leaveTypes={leaveTypes}
-                  employees={manage ? employees : undefined}
-                />
-              </div>
-            </details>
-          </CardContent>
-        </Card>
-      ) : (
+      {!canFileOwn && (
         <Alert>
           <AlertCircleIcon />
           <AlertDescription>

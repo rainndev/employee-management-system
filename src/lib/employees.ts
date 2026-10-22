@@ -2,14 +2,11 @@ import "server-only";
 
 import { pool } from "@/lib/db";
 
-export type EmployeeListItem = {
-  id: string;
-  employeeNo: string;
+export type EmployeeListItem = EmployeeDetail & {
   name: string;
   department: string | null;
   position: string | null;
-  status: string;
-  hireDate: string | null;
+  userEmail: string | null;
 };
 
 export type EmployeeDetail = {
@@ -50,45 +47,9 @@ export type Option = {
   label: string;
 };
 
-// JOINs department, position and user so the list can show names instead of ids.
+// JOINs department, position and user so the list can show names instead of
+// ids, and returns every editable field so the edit dialog can be prefilled.
 export async function listEmployees(): Promise<EmployeeListItem[]> {
-  const { rows } = await pool.query<{
-    id: string;
-    employee_no: string;
-    first_name: string;
-    last_name: string;
-    department: string | null;
-    position: string | null;
-    status: string;
-    hire_date: string | null;
-  }>(
-    `SELECT e.id,
-            e.employee_no,
-            e.first_name,
-            e.last_name,
-            e.status,
-            to_char(e.hire_date, 'YYYY-MM-DD') AS hire_date,
-            d.name AS department,
-            p.title AS position
-     FROM employee e
-     LEFT JOIN department d ON d.id = e.department_id
-     LEFT JOIN position p ON p.id = e.position_id
-     WHERE e.deleted_at IS NULL
-     ORDER BY e.last_name ASC, e.first_name ASC`
-  );
-
-  return rows.map((row) => ({
-    id: row.id,
-    employeeNo: row.employee_no,
-    name: `${row.first_name} ${row.last_name}`,
-    department: row.department,
-    position: row.position,
-    status: row.status,
-    hireDate: row.hire_date,
-  }));
-}
-
-export async function getEmployee(id: string): Promise<EmployeeDetail | null> {
   const { rows } = await pool.query<{
     id: string;
     employee_no: string;
@@ -104,6 +65,9 @@ export async function getEmployee(id: string): Promise<EmployeeDetail | null> {
     position_id: string;
     manager_id: string;
     user_id: string;
+    department: string | null;
+    position: string | null;
+    user_email: string | null;
   }>(
     `SELECT e.id,
             e.employee_no,
@@ -118,18 +82,19 @@ export async function getEmployee(id: string): Promise<EmployeeDetail | null> {
             coalesce(e.department_id::text, '') AS department_id,
             coalesce(e.position_id::text, '') AS position_id,
             coalesce(e.manager_id::text, '') AS manager_id,
-            coalesce(e.user_id::text, '') AS user_id
+            coalesce(e.user_id::text, '') AS user_id,
+            d.name AS department,
+            p.title AS position,
+            u.email AS user_email
      FROM employee e
-     WHERE e.id = $1 AND e.deleted_at IS NULL`,
-    [id]
+     LEFT JOIN department d ON d.id = e.department_id
+     LEFT JOIN position p ON p.id = e.position_id
+     LEFT JOIN "user" u ON u.id = e.user_id
+     WHERE e.deleted_at IS NULL
+     ORDER BY e.last_name ASC, e.first_name ASC`
   );
 
-  const row = rows[0];
-  if (!row) {
-    return null;
-  }
-
-  return {
+  return rows.map((row) => ({
     id: row.id,
     employeeNo: row.employee_no,
     firstName: row.first_name,
@@ -144,7 +109,11 @@ export async function getEmployee(id: string): Promise<EmployeeDetail | null> {
     positionId: row.position_id,
     managerId: row.manager_id,
     userId: row.user_id,
-  };
+    name: `${row.first_name} ${row.last_name}`,
+    department: row.department,
+    position: row.position,
+    userEmail: row.user_email,
+  }));
 }
 
 export async function listManagerOptions(

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
 import { requireRole } from "@/lib/dal";
 import { canManage } from "@/lib/roles";
 import {
@@ -12,7 +11,6 @@ import { listDepartments } from "@/lib/departments";
 import { listPositions } from "@/lib/positions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -66,42 +64,35 @@ async function Content() {
       manage ? listUserOptions() : Promise.resolve([]),
     ]);
 
+  const departmentOptions = departments.map((d) => ({
+    id: d.id,
+    label: d.name,
+  }));
+  const positionOptions = positions.map((p) => ({
+    id: p.id,
+    label: p.title,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Employees</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {manage
-            ? "Add, edit, and remove employee records."
-            : "Directory of employee records."}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Employees</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {manage
+              ? "Add, edit, and remove employee records."
+              : "Directory of employee records."}
+          </p>
+        </div>
+        {manage && (
+          <EmployeeForm
+            departments={departmentOptions}
+            positions={positionOptions}
+            managers={managers}
+            users={users}
+          />
+        )}
       </div>
-
-      {manage && (
-        <Card>
-          <CardContent>
-            <details>
-              <summary className="cursor-pointer text-sm font-medium">
-                Add employee
-              </summary>
-              <div className="mt-4">
-                <EmployeeForm
-                  departments={departments.map((d) => ({
-                    id: d.id,
-                    label: d.name,
-                  }))}
-                  positions={positions.map((p) => ({
-                    id: p.id,
-                    label: p.title,
-                  }))}
-                  managers={managers}
-                  users={users}
-                />
-              </div>
-            </details>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="rounded-xl border">
         <Table>
@@ -128,41 +119,56 @@ async function Content() {
               </TableRow>
             )}
 
-            {employees.map((employee) => (
-              <TableRow key={employee.id}>
-                <TableCell className="text-muted-foreground">
-                  {employee.employeeNo}
-                </TableCell>
-                <TableCell className="font-medium">{employee.name}</TableCell>
-                <TableCell>{employee.department ?? "—"}</TableCell>
-                <TableCell>{employee.position ?? "—"}</TableCell>
-                <TableCell>
-                  <Badge variant={statusVariant(employee.status)}>
-                    {employee.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {employee.hireDate ?? "—"}
-                </TableCell>
-                {manage && (
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/employees/${employee.id}/edit`}>
-                          Edit
-                        </Link>
-                      </Button>
-                      <form action={deleteEmployee}>
-                        <input type="hidden" name="id" value={employee.id} />
-                        <Button type="submit" variant="destructive" size="sm">
-                          Delete
-                        </Button>
-                      </form>
-                    </div>
+            {employees.map((employee) => {
+              const rowUsers =
+                employee.userId && employee.userEmail
+                  ? [
+                      ...users,
+                      { id: employee.userId, label: employee.userEmail },
+                    ]
+                  : users;
+              const rowManagers = managers.filter(
+                (manager) => manager.id !== employee.id
+              );
+
+              return (
+                <TableRow key={employee.id}>
+                  <TableCell className="text-muted-foreground">
+                    {employee.employeeNo}
                   </TableCell>
-                )}
-              </TableRow>
-            ))}
+                  <TableCell className="font-medium">{employee.name}</TableCell>
+                  <TableCell>{employee.department ?? "—"}</TableCell>
+                  <TableCell>{employee.position ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(employee.status)}>
+                      {employee.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {employee.hireDate || "—"}
+                  </TableCell>
+                  {manage && (
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <EmployeeForm
+                          employee={employee}
+                          departments={departmentOptions}
+                          positions={positionOptions}
+                          managers={rowManagers}
+                          users={rowUsers}
+                        />
+                        <form action={deleteEmployee}>
+                          <input type="hidden" name="id" value={employee.id} />
+                          <Button type="submit" variant="destructive" size="sm">
+                            Delete
+                          </Button>
+                        </form>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

@@ -5,13 +5,6 @@ import { canManage } from "@/lib/roles";
 import { listPositions } from "@/lib/positions";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -45,28 +38,17 @@ async function Content() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Positions</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {manage
-            ? "Create, rename, and remove job positions."
-            : "Job positions in the organisation."}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Positions</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {manage
+              ? "Create, rename, and remove job positions."
+              : "Job positions in the organisation."}
+          </p>
+        </div>
+        {manage && <PositionForm />}
       </div>
-
-      {manage && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add position</CardTitle>
-            <CardDescription>
-              Titles must be unique among active positions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PositionForm />
-          </CardContent>
-        </Card>
-      )}
 
       <div className="rounded-xl border">
         <Table>
@@ -97,16 +79,8 @@ async function Content() {
                 </TableCell>
                 {manage && (
                   <TableCell>
-                    <div className="flex flex-col items-start gap-2">
-                      <details className="w-full">
-                        <summary className="cursor-pointer text-sm underline">
-                          Edit
-                        </summary>
-                        <div className="mt-3 w-72 rounded-lg border bg-muted/40 p-3">
-                          <PositionForm position={position} />
-                        </div>
-                      </details>
-
+                    <div className="flex items-center gap-2">
+                      <PositionForm position={position} />
                       <form action={deletePosition}>
                         <input type="hidden" name="id" value={position.id} />
                         <Button type="submit" variant="destructive" size="sm">

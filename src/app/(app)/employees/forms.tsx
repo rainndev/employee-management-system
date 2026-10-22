@@ -1,9 +1,19 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 import type { EmployeeDetail, Option } from "@/lib/employees";
+import type { ActionState } from "@/lib/definitions";
 import { saveEmployee } from "./actions";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,7 +58,17 @@ export function EmployeeForm({
   managers,
   users,
 }: Props) {
-  const [state, action, pending] = useActionState(saveEmployee, undefined);
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState<ActionState, FormData>(
+    async (previous, formData) => {
+      const next = await saveEmployee(previous, formData);
+      if (next?.success) {
+        setOpen(false);
+      }
+      return next;
+    },
+    undefined
+  );
   const uid = useId();
   const fieldId = (name: string) => `${uid}-${name}`;
   const errors = state?.errors;
@@ -56,229 +76,267 @@ export function EmployeeForm({
     Boolean(errors?.[name]);
 
   return (
-    <form action={action} className="flex flex-col gap-4">
-      {employee && <input type="hidden" name="id" value={employee.id} />}
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Employee number"
-          htmlFor={fieldId("employeeNo")}
-          error={errors?.employeeNo}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant={employee ? "outline" : "default"}
+          size={employee ? "sm" : "default"}
         >
-          <Input
-            id={fieldId("employeeNo")}
-            name="employeeNo"
-            defaultValue={employee?.employeeNo}
-            aria-invalid={invalid("employeeNo")}
-          />
-        </Field>
+          {employee ? "Edit" : "Add employee"}
+        </Button>
+      </DialogTrigger>
 
-        <Field
-          label="Status"
-          htmlFor={fieldId("status")}
-          error={errors?.status}
-        >
-          <NativeSelect
-            id={fieldId("status")}
-            name="status"
-            defaultValue={employee?.status ?? "active"}
-            className="w-full"
-            aria-invalid={invalid("status")}
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {employee ? "Edit employee" : "Add employee"}
+          </DialogTitle>
+          <DialogDescription>
+            {employee
+              ? `${employee.firstName} ${employee.lastName} · ${employee.employeeNo}`
+              : "Create an employee record and optionally link a user account."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form action={action} className="flex flex-col gap-4">
+          {employee && <input type="hidden" name="id" value={employee.id} />}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Employee number"
+              htmlFor={fieldId("employeeNo")}
+              error={errors?.employeeNo}
+            >
+              <Input
+                id={fieldId("employeeNo")}
+                name="employeeNo"
+                defaultValue={employee?.employeeNo}
+                aria-invalid={invalid("employeeNo")}
+              />
+            </Field>
+
+            <Field
+              label="Status"
+              htmlFor={fieldId("status")}
+              error={errors?.status}
+            >
+              <NativeSelect
+                id={fieldId("status")}
+                name="status"
+                defaultValue={employee?.status ?? "active"}
+                className="w-full"
+                aria-invalid={invalid("status")}
+              >
+                <NativeSelectOption value="active">active</NativeSelectOption>
+                <NativeSelectOption value="on_leave">
+                  on_leave
+                </NativeSelectOption>
+                <NativeSelectOption value="inactive">
+                  inactive
+                </NativeSelectOption>
+                <NativeSelectOption value="terminated">
+                  terminated
+                </NativeSelectOption>
+              </NativeSelect>
+            </Field>
+
+            <Field
+              label="First name"
+              htmlFor={fieldId("firstName")}
+              error={errors?.firstName}
+            >
+              <Input
+                id={fieldId("firstName")}
+                name="firstName"
+                defaultValue={employee?.firstName}
+                aria-invalid={invalid("firstName")}
+              />
+            </Field>
+
+            <Field
+              label="Last name"
+              htmlFor={fieldId("lastName")}
+              error={errors?.lastName}
+            >
+              <Input
+                id={fieldId("lastName")}
+                name="lastName"
+                defaultValue={employee?.lastName}
+                aria-invalid={invalid("lastName")}
+              />
+            </Field>
+
+            <Field
+              label="Birthdate"
+              htmlFor={fieldId("birthdate")}
+              error={errors?.birthdate}
+            >
+              <Input
+                id={fieldId("birthdate")}
+                name="birthdate"
+                type="date"
+                defaultValue={employee?.birthdate}
+                aria-invalid={invalid("birthdate")}
+              />
+            </Field>
+
+            <Field
+              label="Gender"
+              htmlFor={fieldId("gender")}
+              error={errors?.gender}
+            >
+              <NativeSelect
+                id={fieldId("gender")}
+                name="gender"
+                defaultValue={employee?.gender ?? ""}
+                className="w-full"
+                aria-invalid={invalid("gender")}
+              >
+                <NativeSelectOption value="">—</NativeSelectOption>
+                <NativeSelectOption value="male">male</NativeSelectOption>
+                <NativeSelectOption value="female">female</NativeSelectOption>
+                <NativeSelectOption value="other">other</NativeSelectOption>
+              </NativeSelect>
+            </Field>
+
+            <Field
+              label="Phone"
+              htmlFor={fieldId("phone")}
+              error={errors?.phone}
+            >
+              <Input
+                id={fieldId("phone")}
+                name="phone"
+                defaultValue={employee?.phone}
+                aria-invalid={invalid("phone")}
+              />
+            </Field>
+
+            <Field
+              label="Hire date"
+              htmlFor={fieldId("hireDate")}
+              error={errors?.hireDate}
+            >
+              <Input
+                id={fieldId("hireDate")}
+                name="hireDate"
+                type="date"
+                defaultValue={employee?.hireDate}
+                aria-invalid={invalid("hireDate")}
+              />
+            </Field>
+
+            <Field
+              label="Department"
+              htmlFor={fieldId("departmentId")}
+              error={errors?.departmentId}
+            >
+              <NativeSelect
+                id={fieldId("departmentId")}
+                name="departmentId"
+                defaultValue={employee?.departmentId ?? ""}
+                className="w-full"
+                aria-invalid={invalid("departmentId")}
+              >
+                <NativeSelectOption value="">— None —</NativeSelectOption>
+                {departments.map((option) => (
+                  <NativeSelectOption key={option.id} value={option.id}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+
+            <Field
+              label="Position"
+              htmlFor={fieldId("positionId")}
+              error={errors?.positionId}
+            >
+              <NativeSelect
+                id={fieldId("positionId")}
+                name="positionId"
+                defaultValue={employee?.positionId ?? ""}
+                className="w-full"
+                aria-invalid={invalid("positionId")}
+              >
+                <NativeSelectOption value="">— None —</NativeSelectOption>
+                {positions.map((option) => (
+                  <NativeSelectOption key={option.id} value={option.id}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+
+            <Field
+              label="Manager"
+              htmlFor={fieldId("managerId")}
+              error={errors?.managerId}
+            >
+              <NativeSelect
+                id={fieldId("managerId")}
+                name="managerId"
+                defaultValue={employee?.managerId ?? ""}
+                className="w-full"
+                aria-invalid={invalid("managerId")}
+              >
+                <NativeSelectOption value="">— None —</NativeSelectOption>
+                {managers.map((option) => (
+                  <NativeSelectOption key={option.id} value={option.id}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+
+            <Field
+              label="Linked user account"
+              htmlFor={fieldId("userId")}
+              error={errors?.userId}
+            >
+              <NativeSelect
+                id={fieldId("userId")}
+                name="userId"
+                defaultValue={employee?.userId ?? ""}
+                className="w-full"
+                aria-invalid={invalid("userId")}
+              >
+                <NativeSelectOption value="">— None —</NativeSelectOption>
+                {users.map((option) => (
+                  <NativeSelectOption key={option.id} value={option.id}>
+                    {option.label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+          </div>
+
+          <Field
+            label="Address"
+            htmlFor={fieldId("address")}
+            error={errors?.address}
           >
-            <NativeSelectOption value="active">active</NativeSelectOption>
-            <NativeSelectOption value="on_leave">on_leave</NativeSelectOption>
-            <NativeSelectOption value="inactive">inactive</NativeSelectOption>
-            <NativeSelectOption value="terminated">
-              terminated
-            </NativeSelectOption>
-          </NativeSelect>
-        </Field>
+            <Textarea
+              id={fieldId("address")}
+              name="address"
+              defaultValue={employee?.address}
+              aria-invalid={invalid("address")}
+            />
+          </Field>
 
-        <Field
-          label="First name"
-          htmlFor={fieldId("firstName")}
-          error={errors?.firstName}
-        >
-          <Input
-            id={fieldId("firstName")}
-            name="firstName"
-            defaultValue={employee?.firstName}
-            aria-invalid={invalid("firstName")}
-          />
-        </Field>
+          <FormFeedback state={state} />
 
-        <Field
-          label="Last name"
-          htmlFor={fieldId("lastName")}
-          error={errors?.lastName}
-        >
-          <Input
-            id={fieldId("lastName")}
-            name="lastName"
-            defaultValue={employee?.lastName}
-            aria-invalid={invalid("lastName")}
-          />
-        </Field>
-
-        <Field
-          label="Birthdate"
-          htmlFor={fieldId("birthdate")}
-          error={errors?.birthdate}
-        >
-          <Input
-            id={fieldId("birthdate")}
-            name="birthdate"
-            type="date"
-            defaultValue={employee?.birthdate}
-            aria-invalid={invalid("birthdate")}
-          />
-        </Field>
-
-        <Field
-          label="Gender"
-          htmlFor={fieldId("gender")}
-          error={errors?.gender}
-        >
-          <NativeSelect
-            id={fieldId("gender")}
-            name="gender"
-            defaultValue={employee?.gender ?? ""}
-            className="w-full"
-            aria-invalid={invalid("gender")}
-          >
-            <NativeSelectOption value="">—</NativeSelectOption>
-            <NativeSelectOption value="male">male</NativeSelectOption>
-            <NativeSelectOption value="female">female</NativeSelectOption>
-            <NativeSelectOption value="other">other</NativeSelectOption>
-          </NativeSelect>
-        </Field>
-
-        <Field label="Phone" htmlFor={fieldId("phone")} error={errors?.phone}>
-          <Input
-            id={fieldId("phone")}
-            name="phone"
-            defaultValue={employee?.phone}
-            aria-invalid={invalid("phone")}
-          />
-        </Field>
-
-        <Field
-          label="Hire date"
-          htmlFor={fieldId("hireDate")}
-          error={errors?.hireDate}
-        >
-          <Input
-            id={fieldId("hireDate")}
-            name="hireDate"
-            type="date"
-            defaultValue={employee?.hireDate}
-            aria-invalid={invalid("hireDate")}
-          />
-        </Field>
-
-        <Field
-          label="Department"
-          htmlFor={fieldId("departmentId")}
-          error={errors?.departmentId}
-        >
-          <NativeSelect
-            id={fieldId("departmentId")}
-            name="departmentId"
-            defaultValue={employee?.departmentId ?? ""}
-            className="w-full"
-            aria-invalid={invalid("departmentId")}
-          >
-            <NativeSelectOption value="">— None —</NativeSelectOption>
-            {departments.map((option) => (
-              <NativeSelectOption key={option.id} value={option.id}>
-                {option.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-
-        <Field
-          label="Position"
-          htmlFor={fieldId("positionId")}
-          error={errors?.positionId}
-        >
-          <NativeSelect
-            id={fieldId("positionId")}
-            name="positionId"
-            defaultValue={employee?.positionId ?? ""}
-            className="w-full"
-            aria-invalid={invalid("positionId")}
-          >
-            <NativeSelectOption value="">— None —</NativeSelectOption>
-            {positions.map((option) => (
-              <NativeSelectOption key={option.id} value={option.id}>
-                {option.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-
-        <Field
-          label="Manager"
-          htmlFor={fieldId("managerId")}
-          error={errors?.managerId}
-        >
-          <NativeSelect
-            id={fieldId("managerId")}
-            name="managerId"
-            defaultValue={employee?.managerId ?? ""}
-            className="w-full"
-            aria-invalid={invalid("managerId")}
-          >
-            <NativeSelectOption value="">— None —</NativeSelectOption>
-            {managers.map((option) => (
-              <NativeSelectOption key={option.id} value={option.id}>
-                {option.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-
-        <Field
-          label="Linked user account"
-          htmlFor={fieldId("userId")}
-          error={errors?.userId}
-        >
-          <NativeSelect
-            id={fieldId("userId")}
-            name="userId"
-            defaultValue={employee?.userId ?? ""}
-            className="w-full"
-            aria-invalid={invalid("userId")}
-          >
-            <NativeSelectOption value="">— None —</NativeSelectOption>
-            {users.map((option) => (
-              <NativeSelectOption key={option.id} value={option.id}>
-                {option.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-      </div>
-
-      <Field
-        label="Address"
-        htmlFor={fieldId("address")}
-        error={errors?.address}
-      >
-        <Textarea
-          id={fieldId("address")}
-          name="address"
-          defaultValue={employee?.address}
-          aria-invalid={invalid("address")}
-        />
-      </Field>
-
-      <FormFeedback state={state} />
-
-      <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Saving..." : employee ? "Save changes" : "Add employee"}
-      </Button>
-    </form>
+          <DialogFooter>
+            <Button type="submit" disabled={pending}>
+              {pending
+                ? "Saving..."
+                : employee
+                  ? "Save changes"
+                  : "Add employee"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

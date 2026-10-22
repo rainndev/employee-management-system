@@ -8,7 +8,9 @@ The interface is built with [shadcn/ui](https://ui.shadcn.com) on the Radix base
 
 The app shell comes from the [`dashboard-01`](https://ui.shadcn.com/blocks#dashboard-01) block: a collapsible sidebar (`src/components/app-sidebar.tsx`), a header (`src/components/site-header.tsx`), and section cards (`src/components/section-cards.tsx`). The block's placeholder content — Documents / Get Help navigation, the demo chart, the drag-and-drop table, and its mock data — was removed; the dashboard shows this app's real role-based metrics instead.
 
-Installed: `button`, `input`, `label`, `textarea`, `native-select`, `card`, `table`, `badge`, `alert`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
+Installed: `button`, `input`, `label`, `textarea`, `native-select`, `card`, `table`, `badge`, `alert`, `dialog`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
+
+Create and edit forms open in a `Dialog` (departments, positions, employees, and new leave requests). The dialog closes automatically when its action returns success.
 
 Add another component with:
 

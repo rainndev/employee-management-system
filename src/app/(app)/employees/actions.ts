@@ -1,7 +1,6 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { redirect } from "next/navigation";
 import * as z from "zod";
 import { requireRole } from "@/lib/dal";
 import {
@@ -69,10 +68,9 @@ export async function saveEmployee(
   try {
     if (id) {
       await updateEmployee(id, input);
-      redirect("/employees");
+    } else {
+      await createEmployee(input);
     }
-
-    await createEmployee(input);
   } catch (error) {
     console.error("saveEmployee failed:", error);
     return {
