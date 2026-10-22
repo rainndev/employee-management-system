@@ -43,7 +43,7 @@ function statusVariant(status: string) {
 
 export default function EmployeesPage() {
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
+    <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
       <Suspense
         fallback={<p className="text-sm text-muted-foreground">Loading...</p>}
       >

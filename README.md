@@ -6,7 +6,9 @@ Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + PostgreSQL (`pg`) + sha
 
 The interface is built with [shadcn/ui](https://ui.shadcn.com) on the Radix base (`components.json` → `"style": "radix-nova"`). Components live in `src/components/ui/` and are plain source files you can edit.
 
-Installed: `button`, `input`, `label`, `textarea`, `native-select`, `card`, `table`, `badge`, `alert`.
+The app shell comes from the [`dashboard-01`](https://ui.shadcn.com/blocks#dashboard-01) block: a collapsible sidebar (`src/components/app-sidebar.tsx`), a header (`src/components/site-header.tsx`), and section cards (`src/components/section-cards.tsx`). The block's placeholder content — Documents / Get Help navigation, the demo chart, the drag-and-drop table, and its mock data — was removed; the dashboard shows this app's real role-based metrics instead.
+
+Installed: `button`, `input`, `label`, `textarea`, `native-select`, `card`, `table`, `badge`, `alert`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
 
 Add another component with:
 
@@ -180,9 +182,11 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | `src/lib/admin.ts`            | Admin stats and user list queries                                                                    |
 | `src/lib/definitions.ts`      | Zod schemas and form state types                                                                     |
 | `src/app/actions/auth.ts`     | `signup`, `login`, `logout` Server Actions                                                           |
-| `src/components/ui/`           | shadcn/ui components (Button, Input, NativeSelect, Card, Table, Badge, Alert)                        |
+| `src/components/ui/`           | shadcn/ui components (Button, Input, NativeSelect, Card, Table, Badge, Alert, Sidebar, …)             |
+| `src/components/app-sidebar.tsx` | Role-aware sidebar navigation                                                                      |
+| `src/components/section-cards.tsx` | Dashboard metric cards                                                                          |
 | `src/components/form-feedback.tsx` | Shared inline field errors and success/error alerts                                              |
-| `src/app/(app)/layout.tsx`    | Shared nav for signed-in pages                                                                       |
+| `src/app/(app)/layout.tsx`    | Sidebar shell + header for signed-in pages                                                            |
 | `src/app/(app)/*/actions.ts`  | Per-module create/update/delete Server Actions                                                       |
 | `src/app/(app)/admin/`        | Admin dashboard (roles, account status, password reset)                                              |
 

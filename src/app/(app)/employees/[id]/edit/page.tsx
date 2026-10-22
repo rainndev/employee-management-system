@@ -24,7 +24,7 @@ export default function EditEmployeePage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+    <main className="mx-auto w-full max-w-3xl p-4 lg:p-6">
       <Suspense
         fallback={<p className="text-sm text-muted-foreground">Loading...</p>}
       >

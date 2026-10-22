@@ -5,14 +5,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import { getDashboardStats } from "@/lib/analytics";
-import { logout } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SectionCards } from "@/components/section-cards";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -20,17 +13,19 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
-      <Suspense
-        fallback={<p className="text-sm text-muted-foreground">Loading...</p>}
-      >
-        <Profile />
-      </Suspense>
-    </main>
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center py-10 text-sm text-muted-foreground">
+          Loading...
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
 
-async function Profile() {
+async function DashboardContent() {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -61,49 +56,26 @@ async function Profile() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Signed in as {user.email} ·{" "}
-            <span className="capitalize">{user.role}</span>
-          </p>
-        </div>
-        <form action={logout}>
-          <Button type="submit" variant="outline">
-            Sign out
-          </Button>
-        </form>
-      </div>
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <SectionCards stats={stats} />
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.label} size="sm">
-            <CardHeader>
-              <CardDescription>{stat.label}</CardDescription>
-              <CardTitle className="text-2xl">{stat.value}</CardTitle>
-              <p className="text-xs text-muted-foreground">{stat.hint}</p>
-            </CardHeader>
-          </Card>
-        ))}
-      </section>
-
-      <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium text-muted-foreground">
-          Quick links
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href}>
-              <Card className="h-full transition-colors hover:bg-muted/40">
-                <CardHeader>
-                  <CardTitle>{link.label}</CardTitle>
-                  <CardDescription>{link.hint}</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
+        <div className="flex flex-col gap-3 px-4 lg:px-6">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            Quick links
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {links.map((link) => (
+              <Link key={link.href} href={link.href}>
+                <div className="h-full rounded-xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10 transition-colors hover:bg-muted/40">
+                  <p className="font-medium">{link.label}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {link.hint}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>

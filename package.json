@@ -11,12 +11,14 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@tanstack/react-table": "^9.3.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "jose": "^6.2.12",
     "lucide-react": "^1.61.0",
     "next": "16.4.0",
+    "next-themes": "^0.4.6",
     "pg": "^8.23.1",
     "radix-ui": "^1.8.1",
     "react": "19.3.0",
