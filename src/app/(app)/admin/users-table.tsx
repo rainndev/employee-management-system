@@ -5,27 +5,21 @@ import { useFormStatus } from "react-dom";
 import type { AdminUserRow } from "@/lib/admin";
 import { ROLES } from "@/lib/roles";
 import { resetUserPassword, updateUser } from "./user-actions";
-
-const selectClass =
-  "rounded-md border border-black/15 bg-transparent px-2 py-1 text-sm outline-none disabled:opacity-50 dark:border-white/20";
-
-const inputClass =
-  "w-40 rounded-md border border-black/15 bg-transparent px-2 py-1 text-sm outline-none disabled:opacity-50 dark:border-white/20";
-
-const buttonClass =
-  "rounded-md border border-black/15 px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors hover:bg-black/[.04] disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/[.06]";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { FieldError } from "@/components/form-feedback";
 
 function SaveButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
 
   return (
-    <button
-      type="submit"
-      disabled={disabled || pending}
-      className={buttonClass}
-    >
+    <Button type="submit" size="sm" disabled={disabled || pending}>
       {pending ? "Saving..." : "Save"}
-    </button>
+    </Button>
   );
 }
 
@@ -39,26 +33,25 @@ function PasswordResetForm({
   const [state, action, pending] = useActionState(resetUserPassword, undefined);
 
   return (
-    <form action={action} className="flex flex-col gap-1">
+    <form action={action} className="flex flex-col gap-1.5">
       <input type="hidden" name="userId" value={userId} />
       <div className="flex items-center gap-2">
-        <input
+        <Input
           type="password"
           name="password"
           autoComplete="new-password"
           placeholder="New password"
           aria-label={`New password for ${email}`}
-          className={inputClass}
+          className="h-8 w-40"
+          aria-invalid={Boolean(state?.errors?.password)}
         />
-        <button type="submit" disabled={pending} className={buttonClass}>
+        <Button type="submit" variant="outline" size="sm" disabled={pending}>
           {pending ? "Resetting..." : "Reset"}
-        </button>
+        </Button>
       </div>
-      {state?.errors?.password && (
-        <p className="text-xs text-red-600">{state.errors.password[0]}</p>
-      )}
+      <FieldError messages={state?.errors?.password} />
       {state?.message && (
-        <p className="text-xs text-red-600">{state.message}</p>
+        <p className="text-xs text-destructive">{state.message}</p>
       )}
       {state?.success && (
         <p className="text-xs text-emerald-600">Password updated.</p>
@@ -75,18 +68,18 @@ export function UsersTable({
   currentUserId: string;
 }) {
   if (users.length === 0) {
-    return <p className="text-sm text-zinc-500">No users yet.</p>;
+    return <p className="text-sm text-muted-foreground">No users yet.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/15">
+    <div className="overflow-x-auto rounded-xl border">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-black/10 text-xs text-zinc-500 dark:border-white/15">
+        <thead className="border-b text-xs text-muted-foreground">
           <tr>
-            <th className="px-4 py-2 font-medium">Email</th>
-            <th className="px-4 py-2 font-medium">Access</th>
-            <th className="px-4 py-2 font-medium">Reset password</th>
-            <th className="px-4 py-2 font-medium">Created</th>
+            <th className="px-3 py-2 font-medium">Email</th>
+            <th className="px-3 py-2 font-medium">Access</th>
+            <th className="px-3 py-2 font-medium">Reset password</th>
+            <th className="px-3 py-2 font-medium">Created</th>
           </tr>
         </thead>
         <tbody>
@@ -94,55 +87,60 @@ export function UsersTable({
             const isSelf = user.id === currentUserId;
 
             return (
-              <tr
-                key={user.id}
-                className="border-b border-black/5 last:border-0 dark:border-white/10"
-              >
-                <td className="px-4 py-3">
+              <tr key={user.id} className="border-b last:border-0">
+                <td className="px-3 py-3">
                   {user.email}
                   {isSelf && (
-                    <span className="ml-2 text-xs text-zinc-500">(you)</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      (you)
+                    </span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-3">
                   <form action={updateUser} className="flex items-center gap-2">
                     <input type="hidden" name="userId" value={user.id} />
-                    <select
+                    <NativeSelect
                       name="role"
                       defaultValue={user.role}
                       disabled={isSelf}
                       aria-label="Role"
-                      className={selectClass}
+                      className="w-32"
                     >
                       {ROLES.map((role) => (
-                        <option key={role} value={role}>
+                        <NativeSelectOption key={role} value={role}>
                           {role}
-                        </option>
+                        </NativeSelectOption>
                       ))}
-                    </select>
-                    <select
+                    </NativeSelect>
+                    <NativeSelect
                       name="isActive"
                       defaultValue={String(user.isActive)}
                       disabled={isSelf}
                       aria-label="Status"
-                      className={selectClass}
+                      className="w-32"
                     >
-                      <option value="true">Active</option>
-                      <option value="false">Disabled</option>
-                    </select>
+                      <NativeSelectOption value="true">
+                        Active
+                      </NativeSelectOption>
+                      <NativeSelectOption value="false">
+                        Disabled
+                      </NativeSelectOption>
+                    </NativeSelect>
                     <SaveButton disabled={isSelf} />
                   </form>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-3">
                   {isSelf ? (
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-muted-foreground">
                       Not available for your own account
                     </span>
                   ) : (
                     <PasswordResetForm userId={user.id} email={user.email} />
                   )}
                 </td>
-                <td className="px-4 py-3 text-zinc-500">{user.createdAt}</td>
+                <td className="px-3 py-3 text-muted-foreground">
+                  {user.createdAt}
+                </td>
               </tr>
             );
           })}

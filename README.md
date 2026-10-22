@@ -1,6 +1,20 @@
 # Employee Management System
 
-Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + PostgreSQL (`pg`).
+Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + PostgreSQL (`pg`) + shadcn/ui.
+
+## UI
+
+The interface is built with [shadcn/ui](https://ui.shadcn.com) on the Radix base (`components.json` → `"style": "radix-nova"`). Components live in `src/components/ui/` and are plain source files you can edit.
+
+Installed: `button`, `input`, `label`, `textarea`, `native-select`, `card`, `table`, `badge`, `alert`.
+
+Add another component with:
+
+```bash
+pnpm dlx shadcn@latest add <component>
+```
+
+Forms use shadcn `Input`, `Textarea` and `NativeSelect` (a real `<select>`, so Server Action `FormData` submission keeps working without JavaScript). Theme tokens (`--background`, `--primary`, `--muted`, …) are defined in `src/app/globals.css`; dark mode uses the `.dark` class and is not wired to a toggle.
 
 ## Prerequisites
 
@@ -49,6 +63,51 @@ pnpm dev
 
 Open http://localhost:3000, then create an account at `/signup` and sign in at `/login`.
 
+Load the reference data (leave types) once:
+
+```bash
+psql "$DATABASE_URL" -f db/seed.sql
+```
+
+Or paste `db/seed.sql` into pgAdmin's Query Tool and press **F5**.
+
+## Features and role-based access
+
+| Feature | admin | hr | manager | employee |
+| --- | :-: | :-: | :-: | :-: |
+| Dashboard | ✅ | ✅ | ✅ | ✅ |
+| Departments — view | ✅ | ✅ | ✅ | ✅ |
+| Departments — create/edit/delete | ✅ | ✅ | — | — |
+| Positions — view | ✅ | ✅ | ✅ | ✅ |
+| Positions — create/edit/delete | ✅ | ✅ | — | — |
+| Employees — view | ✅ | ✅ | ✅ | — |
+| Employees — create/edit/delete | ✅ | ✅ | — | — |
+| Leave — view | all | all | all | own |
+| Leave — file a request | anyone | anyone | own | own |
+| Leave — approve/reject | ✅ | ✅ | ✅ | — |
+| Leave — delete | any | any | own pending | own pending |
+| Admin (users, roles, resets) | ✅ | — | — | — |
+
+Permissions are enforced in `src/lib/dal.ts` (`requireRole`) and re-checked inside **every** Server Action — the UI hides links, but the server is the security boundary.
+
+### Leave requests need an employee record
+
+`leave_request.approver_id` and `leave_request.employee_id` reference `employee(id)`. An account can only file leave (or approve it) when `employee.user_id` points at that account. Link a user to an employee from **Employees → Add employee → Linked user account**, or approve requests without that constraint by linking the approver too.
+
+## SQL coverage
+
+Every clause in the rubric is used in application code:
+
+| Clause | Where |
+| --- | --- |
+| `SELECT` | all of `src/lib/*.ts` |
+| `INSERT` | `createDepartment`, `createPosition`, `createEmployee`, `createLeaveRequest` |
+| `UPDATE` | `updateDepartment`, `updatePosition`, `updateEmployee`, `setLeaveStatus`, soft deletes |
+| `DELETE` | `deleteLeaveRequest` |
+| `WHERE` | every list/detail query, e.g. `deleted_at IS NULL`, `status = 'pending'` |
+| `ORDER BY` | lists ordered by `name`, `title`, `last_name`, `start_date DESC` |
+| `JOIN` | `listEmployees` (department, position), `listLeaveRequests` (employee, leave_type, approver), `listUserOptions` (LEFT JOIN … IS NULL) |
+
 ## Authentication
 
 - **Signup** (`/signup`) inserts into `"user"` (`email`, `password_hash`, `role`) with bcrypt-hashed passwords. New accounts get the `employee` role.
@@ -96,14 +155,23 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | Path                          | Purpose                                                                                              |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `db/schema.sql`               | Full PostgreSQL schema                                                                               |
+| `db/seed.sql`                 | Reference data (leave types)                                                                         |
 | `src/lib/db.ts`               | Shared `pg` connection pool                                                                          |
 | `src/lib/session.ts`          | JWT sign/verify and session cookie helpers                                                           |
-| `src/lib/dal.ts`              | `getCurrentUser()` / `requireUser()` / `requireAdmin()` data access layer                            |
-| `src/lib/roles.ts`            | Role constants, kept in sync with the `user_role_check` constraint                                   |
+| `src/lib/dal.ts`              | `getCurrentUser()` / `requireUser()` / `requireRole()` / `requireAdmin()`                            |
+| `src/lib/roles.ts`            | Role constants, plus `canManage()` and `canApprove()`                                                |
+| `src/lib/departments.ts`      | Department queries (list, insert, update, soft delete)                                               |
+| `src/lib/positions.ts`        | Position queries                                                                                     |
+| `src/lib/employees.ts`        | Employee queries with JOINs, options, soft delete                                                    |
+| `src/lib/leave.ts`            | Leave types and leave request queries                                                                |
 | `src/lib/admin.ts`            | Admin stats and user list queries                                                                    |
 | `src/lib/definitions.ts`      | Zod schemas and form state types                                                                     |
 | `src/app/actions/auth.ts`     | `signup`, `login`, `logout` Server Actions                                                           |
-| `src/app/admin/user-actions.ts` | `updateUser` Server Action (role + active state)                                                   |
+| `src/components/ui/`           | shadcn/ui components (Button, Input, NativeSelect, Card, Table, Badge, Alert)                        |
+| `src/components/form-feedback.tsx` | Shared inline field errors and success/error alerts                                              |
+| `src/app/(app)/layout.tsx`    | Shared nav for signed-in pages                                                                       |
+| `src/app/(app)/*/actions.ts`  | Per-module create/update/delete Server Actions                                                       |
+| `src/app/(app)/admin/`        | Admin dashboard (roles, account status, password reset)                                              |
 
 ## Scripts
 

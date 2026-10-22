@@ -69,3 +69,13 @@ export async function requireAdmin() {
 
   return user;
 }
+
+export async function requireRole(...roles: Role[]) {
+  const user = await requireUser();
+
+  if (!roles.includes(user.role)) {
+    redirect("/dashboard");
+  }
+
+  return user;
+}

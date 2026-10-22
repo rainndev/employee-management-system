@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -7,24 +8,18 @@ export default function Home() {
         <h1 className="text-2xl font-semibold tracking-tight">
           Employee Management System
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Sign in, or create an account to get started.
         </p>
       </div>
 
       <div className="flex gap-3">
-        <Link
-          href="/login"
-          className="flex h-10 items-center rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
-        >
-          Sign in
-        </Link>
-        <Link
-          href="/signup"
-          className="flex h-10 items-center rounded-md border border-black/15 px-4 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/20 dark:hover:bg-white/[.06]"
-        >
-          Sign up
-        </Link>
+        <Button asChild>
+          <Link href="/login">Sign in</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/signup">Sign up</Link>
+        </Button>
       </div>
     </main>
   );

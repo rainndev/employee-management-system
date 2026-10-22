@@ -1,61 +1,50 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 import { login } from "@/app/actions/auth";
-
-const fieldClass =
-  "rounded-md border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/50";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FieldError, FormFeedback } from "@/components/form-feedback";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined);
+  const uid = useId();
+  const fieldId = (name: string) => `${uid}-${name}`;
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
-        </label>
-        <input
-          id="email"
+      <div className="grid gap-2">
+        <Label htmlFor={fieldId("email")}>Email</Label>
+        <Input
+          id={fieldId("email")}
           name="email"
           type="email"
           autoComplete="email"
           required
-          className={fieldClass}
+          aria-invalid={Boolean(state?.errors?.email)}
         />
-        {state?.errors?.email && (
-          <p className="text-sm text-red-600">{state.errors.email[0]}</p>
-        )}
+        <FieldError messages={state?.errors?.email} />
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
-        </label>
-        <input
-          id="password"
+      <div className="grid gap-2">
+        <Label htmlFor={fieldId("password")}>Password</Label>
+        <Input
+          id={fieldId("password")}
           name="password"
           type="password"
           autoComplete="current-password"
           required
-          className={fieldClass}
+          aria-invalid={Boolean(state?.errors?.password)}
         />
-        {state?.errors?.password && (
-          <p className="text-sm text-red-600">{state.errors.password[0]}</p>
-        )}
+        <FieldError messages={state?.errors?.password} />
       </div>
 
-      {state?.message && (
-        <p className="text-sm text-red-600">{state.message}</p>
-      )}
+      <FormFeedback state={state} />
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="h-10 rounded-md bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-60"
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? "Signing in..." : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

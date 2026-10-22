@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { SignupForm } from "./signup-form";
 
 export const metadata: Metadata = {
@@ -9,23 +16,26 @@ export const metadata: Metadata = {
 export default function SignupPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Create account
-        </h1>
-        <p className="mt-1 mb-6 text-sm text-zinc-600 dark:text-zinc-400">
-          Sign up with your email and a password.
-        </p>
-
-        <SignupForm />
-
-        <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-foreground underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-xl">Create account</CardTitle>
+          <CardDescription>
+            Sign up with your email and a password.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <SignupForm />
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-foreground underline"
+            >
+              Sign in
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }
