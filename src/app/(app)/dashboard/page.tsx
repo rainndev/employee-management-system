@@ -6,10 +6,12 @@ import { getCurrentUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import { getDashboardStats } from "@/lib/analytics";
 import { getSignupSeries } from "@/lib/admin";
+import { listEmployees } from "@/lib/employees";
 import { getMyEmployeeId, listLeaveRequests } from "@/lib/leave";
 import { SignupsChart } from "@/components/signups-chart";
 import { SectionCards } from "@/components/section-cards";
 import { MyLeaveTable } from "@/components/my-leave-table";
+import { EmployeesTableCard } from "@/components/employees-table-card";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -41,6 +43,8 @@ async function DashboardContent() {
     user.role === "admin" || user.role === "manager"
       ? await getSignupSeries(90)
       : null;
+
+  const employees = user.role === "admin" ? await listEmployees() : null;
 
   let myLeave: Awaited<ReturnType<typeof listLeaveRequests>> | null = null;
   let myLeaveLinked = false;
@@ -80,6 +84,12 @@ async function DashboardContent() {
         {signups && (
           <div className="px-4 lg:px-6">
             <SignupsChart data={signups} />
+          </div>
+        )}
+
+        {employees !== null && (
+          <div className="px-4 lg:px-6">
+            <EmployeesTableCard employees={employees} />
           </div>
         )}
 
