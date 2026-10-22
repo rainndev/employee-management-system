@@ -93,7 +93,7 @@ async function Content() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border">
+      <div className="overflow-hidden rounded-xl border p-4">
         <Table>
           <TableHeader className="[&_th]:text-muted-foreground">
             <TableRow>

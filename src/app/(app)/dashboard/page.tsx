@@ -6,8 +6,10 @@ import { getCurrentUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import { getDashboardStats } from "@/lib/analytics";
 import { getSignupSeries } from "@/lib/admin";
+import { getMyEmployeeId, listLeaveRequests } from "@/lib/leave";
 import { SignupsChart } from "@/components/signups-chart";
 import { SectionCards } from "@/components/section-cards";
+import { MyLeaveTable } from "@/components/my-leave-table";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -40,6 +42,15 @@ async function DashboardContent() {
       ? await getSignupSeries(90)
       : null;
 
+  let myLeave: Awaited<ReturnType<typeof listLeaveRequests>> | null = null;
+  let myLeaveLinked = false;
+
+  if (user.role === "employee") {
+    const employeeId = await getMyEmployeeId(user.id);
+    myLeaveLinked = employeeId !== null;
+    myLeave = employeeId ? await listLeaveRequests(employeeId) : [];
+  }
+
   const links: { href: string; label: string; hint: string }[] = [
     { href: "/leave", label: "Leave requests", hint: "File or review leave" },
   ];
@@ -69,6 +80,19 @@ async function DashboardContent() {
         {signups && (
           <div className="px-4 lg:px-6">
             <SignupsChart data={signups} />
+          </div>
+        )}
+
+        {myLeave !== null && (
+          <div className="px-4 lg:px-6">
+            <MyLeaveTable
+              requests={myLeave}
+              emptyMessage={
+                myLeaveLinked
+                  ? "No leave requests yet."
+                  : "Your account is not linked to an employee record yet."
+              }
+            />
           </div>
         )}
 

@@ -115,7 +115,7 @@ export function AppSidebar({
                   <span className="flex size-4 items-center justify-center rounded-full bg-primary-foreground text-primary">
                     <PlusIcon className="size-2" strokeWidth={3} />
                   </span>
-                  <span className="truncate">Quick Create</span>
+                  <span className="truncate">Leave Request</span>
                 </Link>
               </Button>
 
