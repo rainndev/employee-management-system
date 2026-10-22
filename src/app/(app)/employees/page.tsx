@@ -9,7 +9,7 @@ import {
 } from "@/lib/employees";
 import { listDepartments } from "@/lib/departments";
 import { listPositions } from "@/lib/positions";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import {
   Table,
   TableBody,
@@ -24,19 +24,6 @@ import { EmployeeRowActions } from "./row-actions";
 export const metadata: Metadata = {
   title: "Employees",
 };
-
-function statusVariant(status: string) {
-  if (status === "active") {
-    return "default" as const;
-  }
-  if (status === "on_leave") {
-    return "secondary" as const;
-  }
-  if (status === "terminated") {
-    return "destructive" as const;
-  }
-  return "outline" as const;
-}
 
 export default function EmployeesPage() {
   return (
@@ -139,9 +126,7 @@ async function Content() {
                   <TableCell>{employee.department ?? "—"}</TableCell>
                   <TableCell>{employee.position ?? "—"}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(employee.status)}>
-                      {employee.status}
-                    </Badge>
+                    <StatusBadge status={employee.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {employee.hireDate || "—"}

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { LeaveRequestItem } from "@/lib/leave";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "@/components/date-range";
+import { StatusBadge } from "@/components/status-badge";
 import {
   Card,
   CardAction,
@@ -21,16 +21,6 @@ import {
 } from "@/components/ui/table";
 
 const VISIBLE_REQUESTS = 5;
-
-function statusVariant(status: string) {
-  if (status === "approved") {
-    return "default" as const;
-  }
-  if (status === "rejected") {
-    return "destructive" as const;
-  }
-  return "secondary" as const;
-}
 
 export function MyLeaveTable({
   requests,
@@ -86,9 +76,7 @@ export function MyLeaveTable({
                 </TableCell>
                 <TableCell>{request.days}</TableCell>
                 <TableCell>
-                  <Badge variant={statusVariant(request.status)}>
-                    {request.status}
-                  </Badge>
+                  <StatusBadge status={request.status} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {request.approverName ?? "—"}

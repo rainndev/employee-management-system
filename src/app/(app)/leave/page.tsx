@@ -10,7 +10,6 @@ import {
 import { listEmployeeOptions } from "@/lib/employees";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -22,20 +21,11 @@ import {
 import { LeaveRequestForm } from "./forms";
 import { LeaveRowActions } from "./row-actions";
 import { DateRange } from "@/components/date-range";
+import { StatusBadge } from "@/components/status-badge";
 
 export const metadata: Metadata = {
   title: "Leave",
 };
-
-function statusVariant(status: string) {
-  if (status === "approved") {
-    return "default" as const;
-  }
-  if (status === "rejected") {
-    return "destructive" as const;
-  }
-  return "secondary" as const;
-}
 
 export default function LeavePage() {
   return (
@@ -163,9 +153,7 @@ async function Content() {
                   </TableCell>
                   <TableCell>{request.days}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(request.status)}>
-                      {request.status}
-                    </Badge>
+                    <StatusBadge status={request.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {request.approverName ?? "—"}
