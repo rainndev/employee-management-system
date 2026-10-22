@@ -2,7 +2,9 @@
 
 import { useActionState, useTransition } from "react";
 import { ChevronDownIcon } from "lucide-react";
+import { toast } from "sonner";
 import type { AdminUserRow } from "@/lib/admin";
+import type { ResetPasswordState } from "@/lib/definitions";
 import { isRole, ROLES } from "@/lib/roles";
 import { resetUserPassword, setUserActive, setUserRole } from "./user-actions";
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,20 @@ function PasswordResetForm({
   userId: string;
   email: string;
 }) {
-  const [state, action, pending] = useActionState(resetUserPassword, undefined);
+  const [state, action, pending] = useActionState<ResetPasswordState, FormData>(
+    async (previous, formData) => {
+      const next = await resetUserPassword(previous, formData);
+      if (next?.success) {
+        toast.success("Password updated");
+      } else if (next?.message) {
+        toast.error(next.message);
+      } else if (next?.errors) {
+        toast.error("Please choose a valid password.");
+      }
+      return next;
+    },
+    undefined
+  );
 
   return (
     <form action={action} className="flex flex-col gap-1.5">
@@ -71,13 +86,25 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
     }
 
     startTransition(async () => {
-      await setUserRole(user.id, value);
+      try {
+        await setUserRole(user.id, value);
+        toast.success(`Role changed to ${value}`);
+      } catch {
+        toast.error("Could not update the role.");
+      }
     });
   }
 
   function changeActive(value: string) {
     startTransition(async () => {
-      await setUserActive(user.id, value === "true");
+      try {
+        await setUserActive(user.id, value === "true");
+        toast.success(
+          value === "true" ? "Account enabled" : "Account disabled"
+        );
+      } catch {
+        toast.error("Could not update the account.");
+      }
     });
   }
 

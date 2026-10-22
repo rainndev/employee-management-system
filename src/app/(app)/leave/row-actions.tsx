@@ -7,6 +7,7 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { LeaveRequestItem } from "@/lib/leave";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,11 @@ export function LeaveRowActions({
 }) {
   const [pending, startTransition] = useTransition();
   const showDecision = canDecide && request.status === "pending";
+  const hasActions = showDecision || canDelete;
+
+  if (!hasActions) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
@@ -47,7 +53,14 @@ export function LeaveRowActions({
             <DropdownMenuItem
               disabled={pending}
               onSelect={() =>
-                startTransition(() => decideLeave(request.id, "approved"))
+                startTransition(async () => {
+                  try {
+                    await decideLeave(request.id, "approved");
+                    toast.success("Leave request approved");
+                  } catch {
+                    toast.error("Could not update the request.");
+                  }
+                })
               }
             >
               <CheckIcon />
@@ -56,7 +69,14 @@ export function LeaveRowActions({
             <DropdownMenuItem
               disabled={pending}
               onSelect={() =>
-                startTransition(() => decideLeave(request.id, "rejected"))
+                startTransition(async () => {
+                  try {
+                    await decideLeave(request.id, "rejected");
+                    toast.success("Leave request rejected");
+                  } catch {
+                    toast.error("Could not update the request.");
+                  }
+                })
               }
             >
               <XIcon />
@@ -70,7 +90,16 @@ export function LeaveRowActions({
           <DropdownMenuItem
             variant="destructive"
             disabled={pending}
-            onSelect={() => startTransition(() => deleteLeave(request.id))}
+            onSelect={() =>
+              startTransition(async () => {
+                try {
+                  await deleteLeave(request.id);
+                  toast.success("Leave request deleted");
+                } catch {
+                  toast.error("Could not delete the request.");
+                }
+              })
+            }
           >
             <Trash2Icon />
             Delete

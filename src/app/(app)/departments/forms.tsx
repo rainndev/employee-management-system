@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
+import { toast } from "sonner";
 import type { Department } from "@/lib/departments";
 import type { ActionState } from "@/lib/definitions";
 import { saveDepartment } from "./actions";
@@ -38,6 +39,11 @@ export function DepartmentForm({
       const next = await saveDepartment(previous, formData);
       if (next?.success) {
         setOpen(false);
+        toast.success(department ? "Department updated" : "Department created");
+      } else if (next?.message) {
+        toast.error(next.message);
+      } else if (next?.errors) {
+        toast.error("Please fix the highlighted fields.");
       }
       return next;
     },

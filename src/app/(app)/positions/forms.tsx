@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
+import { toast } from "sonner";
 import type { Position } from "@/lib/positions";
 import type { ActionState } from "@/lib/definitions";
 import { savePosition } from "./actions";
@@ -38,6 +39,11 @@ export function PositionForm({
       const next = await savePosition(previous, formData);
       if (next?.success) {
         setOpen(false);
+        toast.success(position ? "Position updated" : "Position created");
+      } else if (next?.message) {
+        toast.error(next.message);
+      } else if (next?.errors) {
+        toast.error("Please fix the highlighted fields.");
       }
       return next;
     },

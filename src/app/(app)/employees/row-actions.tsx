@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { EllipsisVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 import type { EmployeeListItem, Option } from "@/lib/employees";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +48,16 @@ export function EmployeeRowActions({
           <DropdownMenuItem
             variant="destructive"
             disabled={pending}
-            onSelect={() => startTransition(() => deleteEmployee(employee.id))}
+            onSelect={() =>
+              startTransition(async () => {
+                try {
+                  await deleteEmployee(employee.id);
+                  toast.success("Employee deleted");
+                } catch {
+                  toast.error("Could not delete the employee.");
+                }
+              })
+            }
           >
             <Trash2Icon />
             Delete

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
+import { toast } from "sonner";
 import type { Option } from "@/lib/employees";
 import type { LeaveType } from "@/lib/leave";
 import type { ActionState } from "@/lib/definitions";
@@ -69,6 +70,11 @@ export function LeaveRequestForm({
       const next = await createLeaveRequestAction(previous, formData);
       if (next?.success) {
         setOpen(false);
+        toast.success("Leave request submitted");
+      } else if (next?.message) {
+        toast.error(next.message);
+      } else if (next?.errors) {
+        toast.error("Please fix the highlighted fields.");
       }
       return next;
     },

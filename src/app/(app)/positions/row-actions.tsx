@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { EllipsisVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 import type { Position } from "@/lib/positions";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +36,16 @@ export function PositionRowActions({ position }: { position: Position }) {
           <DropdownMenuItem
             variant="destructive"
             disabled={pending}
-            onSelect={() => startTransition(() => deletePosition(position.id))}
+            onSelect={() =>
+              startTransition(async () => {
+                try {
+                  await deletePosition(position.id);
+                  toast.success("Position deleted");
+                } catch {
+                  toast.error("Could not delete the position.");
+                }
+              })
+            }
           >
             <Trash2Icon />
             Delete

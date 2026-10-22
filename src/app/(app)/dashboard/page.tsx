@@ -11,6 +11,7 @@ import { getMyEmployeeId, listLeaveRequests } from "@/lib/leave";
 import { SignupsChart } from "@/components/signups-chart";
 import { SectionCards } from "@/components/section-cards";
 import { MyLeaveTable } from "@/components/my-leave-table";
+import { EmptyLeaveToast } from "@/components/empty-leave-toast";
 import { EmployeesTableCard } from "@/components/employees-table-card";
 
 export const metadata: Metadata = {
@@ -93,17 +94,14 @@ async function DashboardContent() {
           </div>
         )}
 
-        {myLeave !== null && (
+        {myLeave !== null && myLeave.length > 0 && (
           <div className="px-4 lg:px-6">
-            <MyLeaveTable
-              requests={myLeave}
-              emptyMessage={
-                myLeaveLinked
-                  ? "No leave requests yet."
-                  : "Your account is not linked to an employee record yet."
-              }
-            />
+            <MyLeaveTable requests={myLeave} />
           </div>
+        )}
+
+        {myLeave !== null && myLeave.length === 0 && (
+          <EmptyLeaveToast linked={myLeaveLinked} />
         )}
 
         <div className="flex flex-col gap-3 px-4 lg:px-6">

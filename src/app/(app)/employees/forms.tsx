@@ -2,6 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 import { WandSparklesIcon } from "lucide-react";
+import { toast } from "sonner";
 import type { EmployeeDetail, Option } from "@/lib/employees";
 import { NONE_VALUE } from "@/lib/constants";
 import type { ActionState } from "@/lib/definitions";
@@ -91,6 +92,11 @@ export function EmployeeForm({
       const next = await saveEmployee(previous, formData);
       if (next?.success) {
         setOpen(false);
+        toast.success(employee ? "Employee updated" : "Employee added");
+      } else if (next?.message) {
+        toast.error(next.message);
+      } else if (next?.errors) {
+        toast.error("Please fix the highlighted fields.");
       }
       return next;
     },

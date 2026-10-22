@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { EllipsisVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 import type { Department } from "@/lib/departments";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +45,14 @@ export function DepartmentRowActions({
             variant="destructive"
             disabled={pending}
             onSelect={() =>
-              startTransition(() => deleteDepartment(department.id))
+              startTransition(async () => {
+                try {
+                  await deleteDepartment(department.id);
+                  toast.success("Department deleted");
+                } catch {
+                  toast.error("Could not delete the department.");
+                }
+              })
             }
           >
             <Trash2Icon />
