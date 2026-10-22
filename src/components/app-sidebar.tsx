@@ -1,17 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import {
-  BriefcaseIcon,
-  Building2Icon,
-  CalendarDaysIcon,
-  CirclePlusIcon,
-  LayoutDashboardIcon,
-  ShieldCheckIcon,
-  UsersIcon,
-} from "lucide-react";
 import { NavMain, type NavItem } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +16,16 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { canApprove, canManage, type Role } from "@/lib/roles";
+import {
+  BriefcaseIcon,
+  Building2Icon,
+  CalendarDaysIcon,
+  LayoutDashboardIcon,
+  PlusIcon,
+  ShieldCheckIcon,
+  UsersIcon,
+} from "lucide-react";
+import Link from "next/link";
 
 export function AppSidebar({
   user,
@@ -83,7 +84,6 @@ export function AppSidebar({
       : [];
 
   const quickCreateHref = manage ? "/employees" : "/leave";
-  const quickCreateLabel = manage ? "Add employee" : "New leave request";
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -106,19 +106,31 @@ export function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-                >
-                  <Link href={quickCreateHref}>
-                    <CirclePlusIcon />
-                    <span>{quickCreateLabel}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <div className="flex items-center gap-2">
+              <Button
+                asChild
+                className="h-8 flex-1 justify-start gap-2 rounded-lg px-2"
+              >
+                <Link href={quickCreateHref}>
+                  <span className="flex size-4 items-center justify-center rounded-full bg-primary-foreground text-primary">
+                    <PlusIcon className="size-2" strokeWidth={3} />
+                  </span>
+                  <span className="truncate">Quick Create</span>
+                </Link>
+              </Button>
+
+              <Button
+                asChild
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                aria-label="Leave requests"
+              >
+                <Link href="/leave">
+                  <CalendarDaysIcon />
+                </Link>
+              </Button>
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
 
