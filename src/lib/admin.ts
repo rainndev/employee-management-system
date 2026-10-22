@@ -68,3 +68,29 @@ export async function listUsers(): Promise<AdminUserRow[]> {
     createdAt: row.created_at.toISOString().slice(0, 10),
   }));
 }
+
+export type SignupPoint = {
+  date: string;
+  users: number;
+};
+
+// Daily signup counts for the last `days` days, including days with no users.
+export async function getSignupSeries(days = 90): Promise<SignupPoint[]> {
+  const { rows } = await pool.query<{ day: string; users: number }>(
+    `SELECT to_char(d.day, 'YYYY-MM-DD') AS day,
+            count(u.id)::int AS users
+     FROM generate_series(
+            CURRENT_DATE - ($1::int - 1),
+            CURRENT_DATE,
+            interval '1 day'
+          ) AS d(day)
+     LEFT JOIN "user" u
+       ON u.created_at >= d.day
+      AND u.created_at < d.day + interval '1 day'
+     GROUP BY d.day
+     ORDER BY d.day`,
+    [days]
+  );
+
+  return rows.map((row) => ({ date: row.day, users: row.users }));
+}

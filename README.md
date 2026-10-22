@@ -8,7 +8,7 @@ The interface is built with [shadcn/ui](https://ui.shadcn.com) on the Radix base
 
 The app shell comes from the [`dashboard-01`](https://ui.shadcn.com/blocks#dashboard-01) block: a collapsible sidebar (`src/components/app-sidebar.tsx`), a header (`src/components/site-header.tsx`), and section cards (`src/components/section-cards.tsx`). The block's placeholder content — Documents / Get Help navigation, the demo chart, the drag-and-drop table, and its mock data — was removed; the dashboard shows this app's real role-based metrics instead.
 
-Installed: `button`, `input`, `label`, `textarea`, `select`, `calendar`, `popover`, `card`, `table`, `badge`, `alert`, `dialog`, `dropdown-menu`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
+Installed: `button`, `input`, `label`, `textarea`, `select`, `calendar`, `popover`, `card`, `table`, `badge`, `alert`, `dialog`, `dropdown-menu`, `chart`, `toggle-group`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
 
 Create and edit forms open in a `Dialog` (departments, positions, employees, and new leave requests). The dialog closes automatically when its action returns success. Date fields use a `DatePicker` (`src/components/date-picker.tsx`) — a `Popover` + shadcn `Calendar` that writes the chosen day into a hidden `YYYY-MM-DD` input for `FormData` submission.
 
@@ -106,6 +106,8 @@ Each role sees four metrics on `/dashboard`, scoped to what they can act on:
 | employee | My requests | Pending | Approved | Days taken |
 
 Counts come from `src/lib/analytics.ts`; manager metrics are scoped to employees whose `manager_id` is the manager's own employee record.
+
+Admins also get a **Joined users** area chart under the cards — daily signups for the last 7 / 30 / 90 days, defaulting to 7 days (`src/components/signups-chart.tsx`).
 
 ### Leave requests need an employee record
 

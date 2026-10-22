@@ -5,6 +5,8 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import { getDashboardStats } from "@/lib/analytics";
+import { getSignupSeries } from "@/lib/admin";
+import { SignupsChart } from "@/components/signups-chart";
 import { SectionCards } from "@/components/section-cards";
 
 export const metadata: Metadata = {
@@ -33,6 +35,7 @@ async function DashboardContent() {
   }
 
   const stats = await getDashboardStats(user);
+  const signups = user.role === "admin" ? await getSignupSeries(90) : null;
 
   const links: { href: string; label: string; hint: string }[] = [
     { href: "/leave", label: "Leave requests", hint: "File or review leave" },
@@ -59,6 +62,12 @@ async function DashboardContent() {
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <SectionCards stats={stats} />
+
+        {signups && (
+          <div className="px-4 lg:px-6">
+            <SignupsChart data={signups} />
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 px-4 lg:px-6">
           <h2 className="text-sm font-medium text-muted-foreground">
