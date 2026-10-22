@@ -1,10 +1,15 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
+import { WandSparklesIcon } from "lucide-react";
 import type { EmployeeDetail, Option } from "@/lib/employees";
 import { NONE_VALUE } from "@/lib/constants";
 import type { ActionState } from "@/lib/definitions";
 import { saveEmployee } from "./actions";
+
+function generateEmployeeNumber() {
+  return `EMP-${Math.floor(100000 + Math.random() * 900000)}`;
+}
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -73,6 +78,14 @@ export function EmployeeForm({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
+  const [employeeNo, setEmployeeNo] = useState(employee?.employeeNo ?? "");
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setEmployeeNo(employee?.employeeNo ?? "");
+    }
+    setOpen(next);
+  };
   const [state, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await saveEmployee(previous, formData);
@@ -90,7 +103,7 @@ export function EmployeeForm({
     Boolean(errors?.[name]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button
@@ -123,12 +136,27 @@ export function EmployeeForm({
               htmlFor={fieldId("employeeNo")}
               error={errors?.employeeNo}
             >
-              <Input
-                id={fieldId("employeeNo")}
-                name="employeeNo"
-                defaultValue={employee?.employeeNo}
-                aria-invalid={invalid("employeeNo")}
-              />
+              <div className="relative">
+                <Input
+                  id={fieldId("employeeNo")}
+                  name="employeeNo"
+                  value={employeeNo}
+                  onChange={(event) => setEmployeeNo(event.target.value)}
+                  aria-invalid={invalid("employeeNo")}
+                  className="pr-9"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="absolute top-1/2 right-1 -translate-y-1/2"
+                  aria-label="Generate employee number"
+                  title="Generate employee number"
+                  onClick={() => setEmployeeNo(generateEmployeeNumber())}
+                >
+                  <WandSparklesIcon />
+                </Button>
+              </div>
             </Field>
 
             <Field
