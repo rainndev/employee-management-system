@@ -107,7 +107,7 @@ Each role sees four metrics on `/dashboard`, scoped to what they can act on:
 
 Counts come from `src/lib/analytics.ts`; manager metrics are scoped to employees whose `manager_id` is the manager's own employee record.
 
-Admins also get a **Joined users** area chart under the cards — daily signups for the last 7 / 30 / 90 days, defaulting to 7 days (`src/components/signups-chart.tsx`).
+Admins and managers also get a **Joined users** area chart under the cards — daily signups for the last 7 / 30 / 90 days, defaulting to 7 days (`src/components/signups-chart.tsx`).
 
 ### Leave requests need an employee record
 

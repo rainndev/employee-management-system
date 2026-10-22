@@ -35,7 +35,10 @@ async function DashboardContent() {
   }
 
   const stats = await getDashboardStats(user);
-  const signups = user.role === "admin" ? await getSignupSeries(90) : null;
+  const signups =
+    user.role === "admin" || user.role === "manager"
+      ? await getSignupSeries(90)
+      : null;
 
   const links: { href: string; label: string; hint: string }[] = [
     { href: "/leave", label: "Leave requests", hint: "File or review leave" },
