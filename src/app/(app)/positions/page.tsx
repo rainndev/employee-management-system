@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/dal";
 import { canManage } from "@/lib/roles";
 import { listPositions } from "@/lib/positions";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,8 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deletePosition } from "./actions";
 import { PositionForm } from "./forms";
+import { PositionRowActions } from "./row-actions";
 
 export const metadata: Metadata = {
   title: "Positions",
@@ -50,13 +49,13 @@ async function Content() {
         {manage && <PositionForm />}
       </div>
 
-      <div className="rounded-xl border">
+      <div className="overflow-hidden rounded-xl border">
         <Table>
-          <TableHeader>
+          <TableHeader className="[&_th]:text-muted-foreground">
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Description</TableHead>
-              {manage && <TableHead>Actions</TableHead>}
+              {manage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -78,16 +77,8 @@ async function Content() {
                   {position.description ?? "—"}
                 </TableCell>
                 {manage && (
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <PositionForm position={position} />
-                      <form action={deletePosition}>
-                        <input type="hidden" name="id" value={position.id} />
-                        <Button type="submit" variant="destructive" size="sm">
-                          Delete
-                        </Button>
-                      </form>
-                    </div>
+                  <TableCell className="text-right">
+                    <PositionRowActions position={position} />
                   </TableCell>
                 )}
               </TableRow>

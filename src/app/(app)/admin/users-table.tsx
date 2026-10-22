@@ -15,6 +15,14 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { FieldError } from "@/components/form-feedback";
 
 function PasswordResetForm({
@@ -74,15 +82,15 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
   }
 
   return (
-    <tr className="border-b last:border-0">
-      <td className="px-3 py-3">
+    <TableRow>
+      <TableCell>
         {user.email}
         {isSelf && (
           <span className="ml-2 text-xs text-muted-foreground">(you)</span>
         )}
-      </td>
+      </TableCell>
 
-      <td className="px-3 py-3">
+      <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -113,9 +121,9 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-      </td>
+      </TableCell>
 
-      <td className="px-3 py-3">
+      <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -141,9 +149,9 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-      </td>
+      </TableCell>
 
-      <td className="px-3 py-3">
+      <TableCell>
         {isSelf ? (
           <span className="text-xs text-muted-foreground">
             Not available for your own account
@@ -151,10 +159,10 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
         ) : (
           <PasswordResetForm userId={user.id} email={user.email} />
         )}
-      </td>
+      </TableCell>
 
-      <td className="px-3 py-3 text-muted-foreground">{user.createdAt}</td>
-    </tr>
+      <TableCell className="text-muted-foreground">{user.createdAt}</TableCell>
+    </TableRow>
   );
 }
 
@@ -170,18 +178,18 @@ export function UsersTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b text-xs text-muted-foreground">
-          <tr>
-            <th className="px-3 py-2 font-medium">Email</th>
-            <th className="px-3 py-2 font-medium">Role</th>
-            <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2 font-medium">Reset password</th>
-            <th className="px-3 py-2 font-medium">Created</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="overflow-hidden rounded-xl border">
+      <Table>
+        <TableHeader className="[&_th]:text-muted-foreground">
+          <TableRow>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Reset password</TableHead>
+            <TableHead>Created</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {users.map((user) => (
             <UserRow
               key={user.id}
@@ -189,8 +197,8 @@ export function UsersTable({
               isSelf={user.id === currentUserId}
             />
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

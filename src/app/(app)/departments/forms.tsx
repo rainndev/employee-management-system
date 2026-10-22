@@ -19,8 +19,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
-export function DepartmentForm({ department }: { department?: Department }) {
-  const [open, setOpen] = useState(false);
+export function DepartmentForm({
+  department,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}: {
+  department?: Department;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [state, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await saveDepartment(previous, formData);
@@ -36,14 +48,16 @@ export function DepartmentForm({ department }: { department?: Department }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant={department ? "outline" : "default"}
-          size={department ? "sm" : "default"}
-        >
-          {department ? "Edit" : "Add department"}
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            variant={department ? "outline" : "default"}
+            size={department ? "sm" : "default"}
+          >
+            {department ? "Edit" : "Add department"}
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent>
         <DialogHeader>

@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/dal";
 import { canManage } from "@/lib/roles";
 import { listDepartments } from "@/lib/departments";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,8 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteDepartment } from "./actions";
 import { DepartmentForm } from "./forms";
+import { DepartmentRowActions } from "./row-actions";
 
 export const metadata: Metadata = {
   title: "Departments",
@@ -50,13 +49,13 @@ async function Content() {
         {manage && <DepartmentForm />}
       </div>
 
-      <div className="rounded-xl border">
+      <div className="overflow-hidden rounded-xl border">
         <Table>
-          <TableHeader>
+          <TableHeader className="[&_th]:text-muted-foreground">
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
-              {manage && <TableHead>Actions</TableHead>}
+              {manage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -78,16 +77,8 @@ async function Content() {
                   {department.description ?? "—"}
                 </TableCell>
                 {manage && (
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <DepartmentForm department={department} />
-                      <form action={deleteDepartment}>
-                        <input type="hidden" name="id" value={department.id} />
-                        <Button type="submit" variant="destructive" size="sm">
-                          Delete
-                        </Button>
-                      </form>
-                    </div>
+                  <TableCell className="text-right">
+                    <DepartmentRowActions department={department} />
                   </TableCell>
                 )}
               </TableRow>

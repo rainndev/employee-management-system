@@ -9,7 +9,6 @@ import {
 } from "@/lib/employees";
 import { listDepartments } from "@/lib/departments";
 import { listPositions } from "@/lib/positions";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -19,8 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteEmployee } from "./actions";
 import { EmployeeForm } from "./forms";
+import { EmployeeRowActions } from "./row-actions";
 
 export const metadata: Metadata = {
   title: "Employees",
@@ -94,9 +93,9 @@ async function Content() {
         )}
       </div>
 
-      <div className="rounded-xl border">
+      <div className="overflow-hidden rounded-xl border">
         <Table>
-          <TableHeader>
+          <TableHeader className="[&_th]:text-muted-foreground">
             <TableRow>
               <TableHead>No.</TableHead>
               <TableHead>Name</TableHead>
@@ -104,7 +103,7 @@ async function Content() {
               <TableHead>Position</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Hire date</TableHead>
-              {manage && <TableHead>Actions</TableHead>}
+              {manage && <TableHead className="w-10" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -148,22 +147,14 @@ async function Content() {
                     {employee.hireDate || "—"}
                   </TableCell>
                   {manage && (
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <EmployeeForm
-                          employee={employee}
-                          departments={departmentOptions}
-                          positions={positionOptions}
-                          managers={rowManagers}
-                          users={rowUsers}
-                        />
-                        <form action={deleteEmployee}>
-                          <input type="hidden" name="id" value={employee.id} />
-                          <Button type="submit" variant="destructive" size="sm">
-                            Delete
-                          </Button>
-                        </form>
-                      </div>
+                    <TableCell className="text-right">
+                      <EmployeeRowActions
+                        employee={employee}
+                        departments={departmentOptions}
+                        positions={positionOptions}
+                        managers={rowManagers}
+                        users={rowUsers}
+                      />
                     </TableCell>
                   )}
                 </TableRow>

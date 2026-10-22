@@ -43,10 +43,9 @@ export async function savePosition(
   return { success: true };
 }
 
-export async function deletePosition(formData: FormData) {
+export async function deletePosition(id: string) {
   await requireRole("admin", "hr");
 
-  const id = String(formData.get("id") ?? "");
   if (!id) {
     return;
   }

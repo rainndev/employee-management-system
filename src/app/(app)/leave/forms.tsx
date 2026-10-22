@@ -51,11 +51,19 @@ function Field({
 export function LeaveRequestForm({
   leaveTypes,
   employees,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   leaveTypes: LeaveType[];
   employees?: Option[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [state, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await createLeaveRequestAction(previous, formData);
@@ -71,9 +79,11 @@ export function LeaveRequestForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>New leave request</Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button>New leave request</Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>

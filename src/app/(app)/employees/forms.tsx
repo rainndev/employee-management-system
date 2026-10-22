@@ -62,8 +62,17 @@ export function EmployeeForm({
   positions,
   managers,
   users,
-}: Props) {
-  const [open, setOpen] = useState(false);
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}: Props & {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [state, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await saveEmployee(previous, formData);
@@ -82,14 +91,16 @@ export function EmployeeForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant={employee ? "outline" : "default"}
-          size={employee ? "sm" : "default"}
-        >
-          {employee ? "Edit" : "Add employee"}
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            variant={employee ? "outline" : "default"}
+            size={employee ? "sm" : "default"}
+          >
+            {employee ? "Edit" : "Add employee"}
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>

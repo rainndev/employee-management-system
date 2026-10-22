@@ -63,13 +63,13 @@ export async function createLeaveRequestAction(
   return { success: true };
 }
 
-export async function decideLeave(formData: FormData) {
+export async function decideLeave(
+  id: string,
+  decision: "approved" | "rejected"
+) {
   const user = await requireRole("admin", "hr", "manager");
 
-  const id = String(formData.get("id") ?? "");
-  const decision = formData.get("decision");
-
-  if (!id || (decision !== "approved" && decision !== "rejected")) {
+  if (!id) {
     return;
   }
 
@@ -82,10 +82,9 @@ export async function decideLeave(formData: FormData) {
   refresh();
 }
 
-export async function deleteLeave(formData: FormData) {
+export async function deleteLeave(id: string) {
   const user = await requireUser();
 
-  const id = String(formData.get("id") ?? "");
   if (!id) {
     return;
   }

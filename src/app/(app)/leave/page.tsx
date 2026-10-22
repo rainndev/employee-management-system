@@ -10,7 +10,6 @@ import {
 import { listEmployeeOptions } from "@/lib/employees";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -20,8 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { decideLeave, deleteLeave } from "./actions";
 import { LeaveRequestForm } from "./forms";
+import { LeaveRowActions } from "./row-actions";
 
 export const metadata: Metadata = {
   title: "Leave",
@@ -112,9 +111,9 @@ async function Content() {
         </Alert>
       )}
 
-      <div className="rounded-xl border">
+      <div className="overflow-hidden rounded-xl border">
         <Table>
-          <TableHeader>
+          <TableHeader className="[&_th]:text-muted-foreground">
             <TableRow>
               {approveAll && <TableHead>Employee</TableHead>}
               <TableHead>Type</TableHead>
@@ -122,7 +121,7 @@ async function Content() {
               <TableHead>Days</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Approver</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -167,44 +166,12 @@ async function Content() {
                   <TableCell className="text-muted-foreground">
                     {request.approverName ?? "—"}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {canDecide && request.status === "pending" && (
-                        <>
-                          <form action={decideLeave}>
-                            <input type="hidden" name="id" value={request.id} />
-                            <input
-                              type="hidden"
-                              name="decision"
-                              value="approved"
-                            />
-                            <Button type="submit" size="sm">
-                              Approve
-                            </Button>
-                          </form>
-                          <form action={decideLeave}>
-                            <input type="hidden" name="id" value={request.id} />
-                            <input
-                              type="hidden"
-                              name="decision"
-                              value="rejected"
-                            />
-                            <Button type="submit" variant="outline" size="sm">
-                              Reject
-                            </Button>
-                          </form>
-                        </>
-                      )}
-
-                      {canDelete && (
-                        <form action={deleteLeave}>
-                          <input type="hidden" name="id" value={request.id} />
-                          <Button type="submit" variant="destructive" size="sm">
-                            Delete
-                          </Button>
-                        </form>
-                      )}
-                    </div>
+                  <TableCell className="text-right">
+                    <LeaveRowActions
+                      request={request}
+                      canDecide={canDecide}
+                      canDelete={canDelete}
+                    />
                   </TableCell>
                 </TableRow>
               );

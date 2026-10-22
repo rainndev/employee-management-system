@@ -43,10 +43,9 @@ export async function saveDepartment(
   return { success: true };
 }
 
-export async function deleteDepartment(formData: FormData) {
+export async function deleteDepartment(id: string) {
   await requireRole("admin", "hr");
 
-  const id = String(formData.get("id") ?? "");
   if (!id) {
     return;
   }

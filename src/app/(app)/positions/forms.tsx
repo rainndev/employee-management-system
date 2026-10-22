@@ -19,8 +19,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
-export function PositionForm({ position }: { position?: Position }) {
-  const [open, setOpen] = useState(false);
+export function PositionForm({
+  position,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}: {
+  position?: Position;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [state, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await savePosition(previous, formData);
@@ -36,14 +48,16 @@ export function PositionForm({ position }: { position?: Position }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant={position ? "outline" : "default"}
-          size={position ? "sm" : "default"}
-        >
-          {position ? "Edit" : "Add position"}
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button
+            variant={position ? "outline" : "default"}
+            size={position ? "sm" : "default"}
+          >
+            {position ? "Edit" : "Add position"}
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent>
         <DialogHeader>

@@ -86,10 +86,9 @@ export async function saveEmployee(
   return { success: true };
 }
 
-export async function deleteEmployee(formData: FormData) {
+export async function deleteEmployee(id: string) {
   await requireRole("admin", "hr");
 
-  const id = String(formData.get("id") ?? "");
   if (!id) {
     return;
   }
