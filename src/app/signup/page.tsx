@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SignupForm } from "./signup-form";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -15,7 +16,10 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
+    <main className="relative flex flex-1 items-center justify-center px-6 py-16">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Create account</CardTitle>
