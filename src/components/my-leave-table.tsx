@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LeaveRequestItem } from "@/lib/leave";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateRange } from "@/components/date-range";
 import {
   Card,
   CardAction,
@@ -80,8 +81,8 @@ export function MyLeaveTable({
                 <TableCell className="font-medium">
                   {request.leaveType}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {request.startDate} → {request.endDate}
+                <TableCell>
+                  <DateRange start={request.startDate} end={request.endDate} />
                 </TableCell>
                 <TableCell>{request.days}</TableCell>
                 <TableCell>

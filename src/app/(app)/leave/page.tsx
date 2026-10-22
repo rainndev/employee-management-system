@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { LeaveRequestForm } from "./forms";
 import { LeaveRowActions } from "./row-actions";
+import { DateRange } from "@/components/date-range";
 
 export const metadata: Metadata = {
   title: "Leave",
@@ -154,8 +155,11 @@ async function Content() {
                     </TableCell>
                   )}
                   <TableCell>{request.leaveType}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {request.startDate} → {request.endDate}
+                  <TableCell>
+                    <DateRange
+                      start={request.startDate}
+                      end={request.endDate}
+                    />
                   </TableCell>
                   <TableCell>{request.days}</TableCell>
                   <TableCell>
