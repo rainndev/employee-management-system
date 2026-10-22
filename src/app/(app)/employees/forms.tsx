@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/date-picker";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
 type Props = {
@@ -172,12 +173,13 @@ export function EmployeeForm({
               htmlFor={fieldId("birthdate")}
               error={errors?.birthdate}
             >
-              <Input
+              <DatePicker
                 id={fieldId("birthdate")}
                 name="birthdate"
-                type="date"
                 defaultValue={employee?.birthdate}
-                aria-invalid={invalid("birthdate")}
+                placeholder="Pick a birthdate"
+                clearable
+                invalid={invalid("birthdate")}
               />
             </Field>
 
@@ -224,12 +226,13 @@ export function EmployeeForm({
               htmlFor={fieldId("hireDate")}
               error={errors?.hireDate}
             >
-              <Input
+              <DatePicker
                 id={fieldId("hireDate")}
                 name="hireDate"
-                type="date"
                 defaultValue={employee?.hireDate}
-                aria-invalid={invalid("hireDate")}
+                placeholder="Pick a hire date"
+                clearable
+                invalid={invalid("hireDate")}
               />
             </Field>
 

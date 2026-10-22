@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/date-picker";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
 function Field({
@@ -137,11 +138,11 @@ export function LeaveRequestForm({
               htmlFor={fieldId("startDate")}
               error={state?.errors?.startDate}
             >
-              <Input
+              <DatePicker
                 id={fieldId("startDate")}
                 name="startDate"
-                type="date"
-                aria-invalid={Boolean(state?.errors?.startDate)}
+                placeholder="Pick a date"
+                invalid={Boolean(state?.errors?.startDate)}
               />
             </Field>
 
@@ -150,11 +151,11 @@ export function LeaveRequestForm({
               htmlFor={fieldId("endDate")}
               error={state?.errors?.endDate}
             >
-              <Input
+              <DatePicker
                 id={fieldId("endDate")}
                 name="endDate"
-                type="date"
-                aria-invalid={Boolean(state?.errors?.endDate)}
+                placeholder="Pick a date"
+                invalid={Boolean(state?.errors?.endDate)}
               />
             </Field>
 
