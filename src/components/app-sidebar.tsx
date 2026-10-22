@@ -18,11 +18,11 @@ import {
 import { canApprove, canManage, type Role } from "@/lib/roles";
 import {
   BriefcaseIcon,
-  Building2Icon,
-  CalendarDaysIcon,
+  BuildingIcon,
+  CalendarIcon,
   LayoutDashboardIcon,
   PlusIcon,
-  ShieldCheckIcon,
+  ShieldIcon,
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,12 +39,12 @@ export function AppSidebar({
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: <LayoutDashboardIcon />,
+      icon: <LayoutDashboardIcon strokeWidth={1.5} />,
     },
     {
       title: "Leave",
       url: "/leave",
-      icon: <CalendarDaysIcon />,
+      icon: <CalendarIcon strokeWidth={1.5} />,
     },
   ];
 
@@ -54,7 +54,7 @@ export function AppSidebar({
           {
             title: "Employees",
             url: "/employees",
-            icon: <UsersIcon />,
+            icon: <UsersIcon strokeWidth={1.5} />,
           },
         ]
       : [];
@@ -63,12 +63,12 @@ export function AppSidebar({
     {
       title: "Departments",
       url: "/departments",
-      icon: <Building2Icon />,
+      icon: <BuildingIcon strokeWidth={1.5} />,
     },
     {
       title: "Positions",
       url: "/positions",
-      icon: <BriefcaseIcon />,
+      icon: <BriefcaseIcon strokeWidth={1.5} />,
     },
   ];
 
@@ -78,7 +78,7 @@ export function AppSidebar({
           {
             title: "Admin",
             url: "/admin",
-            icon: <ShieldCheckIcon />,
+            icon: <ShieldIcon strokeWidth={1.5} />,
           },
         ]
       : [];
@@ -95,7 +95,7 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/dashboard">
-                <BriefcaseIcon className="size-5!" />
+                <BriefcaseIcon className="size-5!" strokeWidth={1.5} />
                 <span className="text-base font-semibold">Employee System</span>
               </Link>
             </SidebarMenuButton>
@@ -127,7 +127,7 @@ export function AppSidebar({
                 aria-label="Leave requests"
               >
                 <Link href="/leave">
-                  <CalendarDaysIcon />
+                  <CalendarIcon strokeWidth={1.5} />
                 </Link>
               </Button>
             </div>
