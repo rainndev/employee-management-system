@@ -90,6 +90,19 @@ Or paste `db/seed.sql` into pgAdmin's Query Tool and press **F5**.
 
 Permissions are enforced in `src/lib/dal.ts` (`requireRole`) and re-checked inside **every** Server Action — the UI hides links, but the server is the security boundary.
 
+### Dashboard analytics
+
+Each role sees four metrics on `/dashboard`, scoped to what they can act on:
+
+| Role | 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- | --- |
+| admin | Employees | Departments | Users | Pending leave |
+| hr | Employees | Positions | Pending leave | Approved leave |
+| manager | Team members | Pending approvals | Approved leave (team) | Upcoming leave (team) |
+| employee | My requests | Pending | Approved | Days taken |
+
+Counts come from `src/lib/analytics.ts`; manager metrics are scoped to employees whose `manager_id` is the manager's own employee record.
+
 ### Leave requests need an employee record
 
 `leave_request.approver_id` and `leave_request.employee_id` reference `employee(id)`. An account can only file leave (or approve it) when `employee.user_id` points at that account. Link a user to an employee from **Employees → Add employee → Linked user account**, or approve requests without that constraint by linking the approver too.

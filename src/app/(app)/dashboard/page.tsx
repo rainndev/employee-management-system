@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
+import { getDashboardStats } from "@/lib/analytics";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,8 @@ async function Profile() {
   if (!user) {
     redirect("/login");
   }
+
+  const stats = await getDashboardStats(user);
 
   const links: { href: string; label: string; hint: string }[] = [
     { href: "/leave", label: "Leave requests", hint: "File or review leave" },
@@ -74,17 +77,34 @@ async function Profile() {
         </form>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {links.map((link) => (
-          <Link key={link.href} href={link.href}>
-            <Card className="h-full transition-colors hover:bg-muted/40">
-              <CardHeader>
-                <CardTitle>{link.label}</CardTitle>
-                <CardDescription>{link.hint}</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label} size="sm">
+            <CardHeader>
+              <CardDescription>{stat.label}</CardDescription>
+              <CardTitle className="text-2xl">{stat.value}</CardTitle>
+              <p className="text-xs text-muted-foreground">{stat.hint}</p>
+            </CardHeader>
+          </Card>
         ))}
+      </section>
+
+      <div className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-muted-foreground">
+          Quick links
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {links.map((link) => (
+            <Link key={link.href} href={link.href}>
+              <Card className="h-full transition-colors hover:bg-muted/40">
+                <CardHeader>
+                  <CardTitle>{link.label}</CardTitle>
+                  <CardDescription>{link.hint}</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
