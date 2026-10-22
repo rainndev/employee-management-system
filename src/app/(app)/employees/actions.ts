@@ -10,6 +10,7 @@ import {
   type EmployeeInput,
 } from "@/lib/employees";
 import { EmployeeSchema, type ActionState } from "@/lib/definitions";
+import { optionalString } from "@/lib/constants";
 
 function errorCode(error: unknown) {
   return typeof error === "object" &&
@@ -32,15 +33,15 @@ export async function saveEmployee(
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     birthdate: formData.get("birthdate") ?? "",
-    gender: formData.get("gender") ?? "",
+    gender: optionalString(formData.get("gender")),
     phone: formData.get("phone") ?? "",
     address: formData.get("address") ?? "",
     hireDate: formData.get("hireDate") ?? "",
     status: formData.get("status") ?? "active",
-    departmentId: formData.get("departmentId") ?? "",
-    positionId: formData.get("positionId") ?? "",
-    managerId: formData.get("managerId") ?? "",
-    userId: formData.get("userId") ?? "",
+    departmentId: optionalString(formData.get("departmentId")),
+    positionId: optionalString(formData.get("positionId")),
+    managerId: optionalString(formData.get("managerId")),
+    userId: optionalString(formData.get("userId")),
   });
 
   if (!parsed.success) {

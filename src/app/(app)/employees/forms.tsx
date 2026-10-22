@@ -2,6 +2,7 @@
 
 import { useActionState, useId, useState } from "react";
 import type { EmployeeDetail, Option } from "@/lib/employees";
+import { NONE_VALUE } from "@/lib/constants";
 import type { ActionState } from "@/lib/definitions";
 import { saveEmployee } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
 type Props = {
@@ -120,24 +124,21 @@ export function EmployeeForm({
               htmlFor={fieldId("status")}
               error={errors?.status}
             >
-              <NativeSelect
-                id={fieldId("status")}
-                name="status"
-                defaultValue={employee?.status ?? "active"}
-                className="w-full"
-                aria-invalid={invalid("status")}
-              >
-                <NativeSelectOption value="active">active</NativeSelectOption>
-                <NativeSelectOption value="on_leave">
-                  on_leave
-                </NativeSelectOption>
-                <NativeSelectOption value="inactive">
-                  inactive
-                </NativeSelectOption>
-                <NativeSelectOption value="terminated">
-                  terminated
-                </NativeSelectOption>
-              </NativeSelect>
+              <Select name="status" defaultValue={employee?.status ?? "active"}>
+                <SelectTrigger
+                  id={fieldId("status")}
+                  className="w-full"
+                  aria-invalid={invalid("status")}
+                >
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">active</SelectItem>
+                  <SelectItem value="on_leave">on_leave</SelectItem>
+                  <SelectItem value="inactive">inactive</SelectItem>
+                  <SelectItem value="terminated">terminated</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field
@@ -185,18 +186,24 @@ export function EmployeeForm({
               htmlFor={fieldId("gender")}
               error={errors?.gender}
             >
-              <NativeSelect
-                id={fieldId("gender")}
+              <Select
                 name="gender"
-                defaultValue={employee?.gender ?? ""}
-                className="w-full"
-                aria-invalid={invalid("gender")}
+                defaultValue={employee?.gender || NONE_VALUE}
               >
-                <NativeSelectOption value="">—</NativeSelectOption>
-                <NativeSelectOption value="male">male</NativeSelectOption>
-                <NativeSelectOption value="female">female</NativeSelectOption>
-                <NativeSelectOption value="other">other</NativeSelectOption>
-              </NativeSelect>
+                <SelectTrigger
+                  id={fieldId("gender")}
+                  className="w-full"
+                  aria-invalid={invalid("gender")}
+                >
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>—</SelectItem>
+                  <SelectItem value="male">male</SelectItem>
+                  <SelectItem value="female">female</SelectItem>
+                  <SelectItem value="other">other</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field
@@ -231,20 +238,26 @@ export function EmployeeForm({
               htmlFor={fieldId("departmentId")}
               error={errors?.departmentId}
             >
-              <NativeSelect
-                id={fieldId("departmentId")}
+              <Select
                 name="departmentId"
-                defaultValue={employee?.departmentId ?? ""}
-                className="w-full"
-                aria-invalid={invalid("departmentId")}
+                defaultValue={employee?.departmentId || NONE_VALUE}
               >
-                <NativeSelectOption value="">— None —</NativeSelectOption>
-                {departments.map((option) => (
-                  <NativeSelectOption key={option.id} value={option.id}>
-                    {option.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger
+                  id={fieldId("departmentId")}
+                  className="w-full"
+                  aria-invalid={invalid("departmentId")}
+                >
+                  <SelectValue placeholder="— None —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
+                  {departments.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field
@@ -252,20 +265,26 @@ export function EmployeeForm({
               htmlFor={fieldId("positionId")}
               error={errors?.positionId}
             >
-              <NativeSelect
-                id={fieldId("positionId")}
+              <Select
                 name="positionId"
-                defaultValue={employee?.positionId ?? ""}
-                className="w-full"
-                aria-invalid={invalid("positionId")}
+                defaultValue={employee?.positionId || NONE_VALUE}
               >
-                <NativeSelectOption value="">— None —</NativeSelectOption>
-                {positions.map((option) => (
-                  <NativeSelectOption key={option.id} value={option.id}>
-                    {option.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger
+                  id={fieldId("positionId")}
+                  className="w-full"
+                  aria-invalid={invalid("positionId")}
+                >
+                  <SelectValue placeholder="— None —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
+                  {positions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field
@@ -273,20 +292,26 @@ export function EmployeeForm({
               htmlFor={fieldId("managerId")}
               error={errors?.managerId}
             >
-              <NativeSelect
-                id={fieldId("managerId")}
+              <Select
                 name="managerId"
-                defaultValue={employee?.managerId ?? ""}
-                className="w-full"
-                aria-invalid={invalid("managerId")}
+                defaultValue={employee?.managerId || NONE_VALUE}
               >
-                <NativeSelectOption value="">— None —</NativeSelectOption>
-                {managers.map((option) => (
-                  <NativeSelectOption key={option.id} value={option.id}>
-                    {option.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger
+                  id={fieldId("managerId")}
+                  className="w-full"
+                  aria-invalid={invalid("managerId")}
+                >
+                  <SelectValue placeholder="— None —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
+                  {managers.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field
@@ -294,20 +319,26 @@ export function EmployeeForm({
               htmlFor={fieldId("userId")}
               error={errors?.userId}
             >
-              <NativeSelect
-                id={fieldId("userId")}
+              <Select
                 name="userId"
-                defaultValue={employee?.userId ?? ""}
-                className="w-full"
-                aria-invalid={invalid("userId")}
+                defaultValue={employee?.userId || NONE_VALUE}
               >
-                <NativeSelectOption value="">— None —</NativeSelectOption>
-                {users.map((option) => (
-                  <NativeSelectOption key={option.id} value={option.id}>
-                    {option.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+                <SelectTrigger
+                  id={fieldId("userId")}
+                  className="w-full"
+                  aria-invalid={invalid("userId")}
+                >
+                  <SelectValue placeholder="— None —" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
+                  {users.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
 

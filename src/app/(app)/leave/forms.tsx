@@ -17,11 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
 function Field({
@@ -86,22 +89,22 @@ export function LeaveRequestForm({
               htmlFor={fieldId("employeeId")}
               error={state?.errors?.employeeId}
             >
-              <NativeSelect
-                id={fieldId("employeeId")}
-                name="employeeId"
-                defaultValue=""
-                className="w-full"
-                aria-invalid={Boolean(state?.errors?.employeeId)}
-              >
-                <NativeSelectOption value="">
-                  — Select employee —
-                </NativeSelectOption>
-                {employees.map((option) => (
-                  <NativeSelectOption key={option.id} value={option.id}>
-                    {option.label}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
+              <Select name="employeeId">
+                <SelectTrigger
+                  id={fieldId("employeeId")}
+                  className="w-full"
+                  aria-invalid={Boolean(state?.errors?.employeeId)}
+                >
+                  <SelectValue placeholder="— Select employee —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           )}
 
@@ -110,20 +113,22 @@ export function LeaveRequestForm({
             htmlFor={fieldId("leaveTypeId")}
             error={state?.errors?.leaveTypeId}
           >
-            <NativeSelect
-              id={fieldId("leaveTypeId")}
-              name="leaveTypeId"
-              defaultValue=""
-              className="w-full"
-              aria-invalid={Boolean(state?.errors?.leaveTypeId)}
-            >
-              <NativeSelectOption value="">— Select type —</NativeSelectOption>
-              {leaveTypes.map((type) => (
-                <NativeSelectOption key={type.id} value={type.id}>
-                  {type.name}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+            <Select name="leaveTypeId">
+              <SelectTrigger
+                id={fieldId("leaveTypeId")}
+                className="w-full"
+                aria-invalid={Boolean(state?.errors?.leaveTypeId)}
+              >
+                <SelectValue placeholder="— Select type —" />
+              </SelectTrigger>
+              <SelectContent>
+                {leaveTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-3">

@@ -8,7 +8,7 @@ The interface is built with [shadcn/ui](https://ui.shadcn.com) on the Radix base
 
 The app shell comes from the [`dashboard-01`](https://ui.shadcn.com/blocks#dashboard-01) block: a collapsible sidebar (`src/components/app-sidebar.tsx`), a header (`src/components/site-header.tsx`), and section cards (`src/components/section-cards.tsx`). The block's placeholder content — Documents / Get Help navigation, the demo chart, the drag-and-drop table, and its mock data — was removed; the dashboard shows this app's real role-based metrics instead.
 
-Installed: `button`, `input`, `label`, `textarea`, `native-select`, `card`, `table`, `badge`, `alert`, `dialog`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
+Installed: `button`, `input`, `label`, `textarea`, `select`, `card`, `table`, `badge`, `alert`, `dialog`, `dropdown-menu`, `avatar`, `separator`, `sheet`, `sidebar`, `skeleton`, `tooltip`.
 
 Create and edit forms open in a `Dialog` (departments, positions, employees, and new leave requests). The dialog closes automatically when its action returns success.
 
@@ -18,7 +18,7 @@ Add another component with:
 pnpm dlx shadcn@latest add <component>
 ```
 
-Forms use shadcn `Input`, `Textarea` and `NativeSelect` (a real `<select>`, so Server Action `FormData` submission keeps working without JavaScript). Theme tokens (`--background`, `--primary`, `--muted`, …) are defined in `src/app/globals.css`; dark mode uses the `.dark` class and is not wired to a toggle.
+Forms use shadcn `Input`, `Textarea` and `Select`. Radix `Select` renders a hidden native select for form submission, so Server Action `FormData` works; optional fields submit the `NONE_VALUE` sentinel (`__none__`), which the actions normalise back to an empty value. Theme tokens (`--background`, `--primary`, `--muted`, …) are defined in `src/app/globals.css`; dark mode uses the `.dark` class and is not wired to a toggle.
 
 ## Prerequisites
 
@@ -184,7 +184,7 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | `src/lib/admin.ts`            | Admin stats and user list queries                                                                    |
 | `src/lib/definitions.ts`      | Zod schemas and form state types                                                                     |
 | `src/app/actions/auth.ts`     | `signup`, `login`, `logout` Server Actions                                                           |
-| `src/components/ui/`           | shadcn/ui components (Button, Input, NativeSelect, Card, Table, Badge, Alert, Sidebar, …)             |
+| `src/components/ui/`           | shadcn/ui components (Button, Input, Select, Card, Table, Badge, Alert, Sidebar, …)                   |
 | `src/components/app-sidebar.tsx` | Role-aware sidebar navigation                                                                      |
 | `src/components/section-cards.tsx` | Dashboard metric cards                                                                          |
 | `src/components/form-feedback.tsx` | Shared inline field errors and success/error alerts                                              |

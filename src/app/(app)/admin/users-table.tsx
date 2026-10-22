@@ -1,27 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState, useTransition } from "react";
+import { ChevronDownIcon } from "lucide-react";
 import type { AdminUserRow } from "@/lib/admin";
-import { ROLES } from "@/lib/roles";
-import { resetUserPassword, updateUser } from "./user-actions";
+import { isRole, ROLES } from "@/lib/roles";
+import { resetUserPassword, setUserActive, setUserRole } from "./user-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { FieldError } from "@/components/form-feedback";
-
-function SaveButton({ disabled }: { disabled: boolean }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button type="submit" size="sm" disabled={disabled || pending}>
-      {pending ? "Saving..." : "Save"}
-    </Button>
-  );
-}
 
 function PasswordResetForm({
   userId,
@@ -60,6 +54,110 @@ function PasswordResetForm({
   );
 }
 
+function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
+  const [pending, startTransition] = useTransition();
+
+  function changeRole(value: string) {
+    if (!isRole(value)) {
+      return;
+    }
+
+    startTransition(async () => {
+      await setUserRole(user.id, value);
+    });
+  }
+
+  function changeActive(value: string) {
+    startTransition(async () => {
+      await setUserActive(user.id, value === "true");
+    });
+  }
+
+  return (
+    <tr className="border-b last:border-0">
+      <td className="px-3 py-3">
+        {user.email}
+        {isSelf && (
+          <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+        )}
+      </td>
+
+      <td className="px-3 py-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSelf || pending}
+              className="w-28 justify-between capitalize"
+            >
+              {user.role}
+              <ChevronDownIcon className="size-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            <DropdownMenuLabel>Role</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={user.role}
+              onValueChange={changeRole}
+            >
+              {ROLES.map((role) => (
+                <DropdownMenuRadioItem
+                  key={role}
+                  value={role}
+                  className="capitalize"
+                >
+                  {role}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+
+      <td className="px-3 py-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSelf || pending}
+              className="w-28 justify-between"
+            >
+              {user.isActive ? "Active" : "Disabled"}
+              <ChevronDownIcon className="size-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            <DropdownMenuLabel>Status</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={user.isActive ? "true" : "false"}
+              onValueChange={changeActive}
+            >
+              <DropdownMenuRadioItem value="true">Active</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="false">
+                Disabled
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </td>
+
+      <td className="px-3 py-3">
+        {isSelf ? (
+          <span className="text-xs text-muted-foreground">
+            Not available for your own account
+          </span>
+        ) : (
+          <PasswordResetForm userId={user.id} email={user.email} />
+        )}
+      </td>
+
+      <td className="px-3 py-3 text-muted-foreground">{user.createdAt}</td>
+    </tr>
+  );
+}
+
 export function UsersTable({
   users,
   currentUserId,
@@ -77,73 +175,20 @@ export function UsersTable({
         <thead className="border-b text-xs text-muted-foreground">
           <tr>
             <th className="px-3 py-2 font-medium">Email</th>
-            <th className="px-3 py-2 font-medium">Access</th>
+            <th className="px-3 py-2 font-medium">Role</th>
+            <th className="px-3 py-2 font-medium">Status</th>
             <th className="px-3 py-2 font-medium">Reset password</th>
             <th className="px-3 py-2 font-medium">Created</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => {
-            const isSelf = user.id === currentUserId;
-
-            return (
-              <tr key={user.id} className="border-b last:border-0">
-                <td className="px-3 py-3">
-                  {user.email}
-                  {isSelf && (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      (you)
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-3">
-                  <form action={updateUser} className="flex items-center gap-2">
-                    <input type="hidden" name="userId" value={user.id} />
-                    <NativeSelect
-                      name="role"
-                      defaultValue={user.role}
-                      disabled={isSelf}
-                      aria-label="Role"
-                      className="w-32"
-                    >
-                      {ROLES.map((role) => (
-                        <NativeSelectOption key={role} value={role}>
-                          {role}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelect>
-                    <NativeSelect
-                      name="isActive"
-                      defaultValue={String(user.isActive)}
-                      disabled={isSelf}
-                      aria-label="Status"
-                      className="w-32"
-                    >
-                      <NativeSelectOption value="true">
-                        Active
-                      </NativeSelectOption>
-                      <NativeSelectOption value="false">
-                        Disabled
-                      </NativeSelectOption>
-                    </NativeSelect>
-                    <SaveButton disabled={isSelf} />
-                  </form>
-                </td>
-                <td className="px-3 py-3">
-                  {isSelf ? (
-                    <span className="text-xs text-muted-foreground">
-                      Not available for your own account
-                    </span>
-                  ) : (
-                    <PasswordResetForm userId={user.id} email={user.email} />
-                  )}
-                </td>
-                <td className="px-3 py-3 text-muted-foreground">
-                  {user.createdAt}
-                </td>
-              </tr>
-            );
-          })}
+          {users.map((user) => (
+            <UserRow
+              key={user.id}
+              user={user}
+              isSelf={user.id === currentUserId}
+            />
+          ))}
         </tbody>
       </table>
     </div>

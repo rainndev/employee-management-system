@@ -9,28 +9,28 @@ import { PasswordSchema, type ResetPasswordState } from "@/lib/definitions";
 
 const BCRYPT_ROUNDS = 10;
 
-export async function updateUser(formData: FormData) {
+export async function setUserRole(userId: string, role: string) {
   const admin = await requireAdmin();
 
-  const userId = String(formData.get("userId") ?? "");
-  const role = formData.get("role");
-  const isActive = formData.get("isActive") === "true";
-
-  if (!userId || !isRole(role)) {
+  if (!userId || userId === admin.id || !isRole(role)) {
     return;
   }
 
-  // An admin must not be able to demote or disable themselves, or they would
-  // lock everyone out of this page.
-  if (userId === admin.id) {
+  await pool.query('UPDATE "user" SET role = $1 WHERE id = $2', [role, userId]);
+  refresh();
+}
+
+export async function setUserActive(userId: string, isActive: boolean) {
+  const admin = await requireAdmin();
+
+  if (!userId || userId === admin.id) {
     return;
   }
 
-  await pool.query(
-    'UPDATE "user" SET role = $1, is_active = $2 WHERE id = $3',
-    [role, isActive, userId]
-  );
-
+  await pool.query('UPDATE "user" SET is_active = $1 WHERE id = $2', [
+    isActive,
+    userId,
+  ]);
   refresh();
 }
 
@@ -61,7 +61,5 @@ export async function resetUserPassword(
     userId,
   ]);
 
-  // No refresh() here: nothing rendered in the table changes on a password
-  // reset, so there is no visible data to re-fetch.
   return { success: true };
 }
