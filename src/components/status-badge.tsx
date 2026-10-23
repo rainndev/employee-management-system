@@ -1,65 +1,65 @@
 import { Badge } from "@/components/ui/badge";
 import {
-  CircleCheckIcon,
-  CircleMinusIcon,
-  CircleXIcon,
-  ClockIcon,
+  CheckIcon,
+  HourglassIcon,
+  MinusIcon,
+  XIcon,
   type LucideIcon,
 } from "lucide-react";
 
 type StatusMeta = {
   label: string;
   icon: LucideIcon;
-  iconClass: string;
+  tone: string;
 };
 
 const STATUS_META: Record<string, StatusMeta> = {
   approved: {
     label: "Approved",
-    icon: CircleCheckIcon,
-    iconClass: "fill-emerald-500 text-white",
+    icon: CheckIcon,
+    tone: "bg-emerald-400 text-white",
   },
   active: {
     label: "Active",
-    icon: CircleCheckIcon,
-    iconClass: "fill-emerald-500 text-white",
+    icon: CheckIcon,
+    tone: "bg-emerald-400 text-white",
   },
   pending: {
     label: "Pending",
-    icon: ClockIcon,
-    iconClass: "fill-amber-500 text-white",
+    icon: HourglassIcon,
+    tone: "bg-amber-400 text-white",
   },
   on_leave: {
     label: "On leave",
-    icon: ClockIcon,
-    iconClass: "fill-amber-500 text-white",
+    icon: HourglassIcon,
+    tone: "bg-amber-400 text-white",
   },
   rejected: {
     label: "Rejected",
-    icon: CircleXIcon,
-    iconClass: "fill-red-500 text-white",
+    icon: XIcon,
+    tone: "bg-red-400 text-white",
   },
   terminated: {
     label: "Terminated",
-    icon: CircleXIcon,
-    iconClass: "fill-red-500 text-white",
+    icon: XIcon,
+    tone: "bg-red-400 text-white",
   },
   inactive: {
     label: "Inactive",
-    icon: CircleMinusIcon,
-    iconClass: "fill-muted-foreground text-background",
+    icon: MinusIcon,
+    tone: "bg-muted-foreground text-background",
   },
   cancelled: {
     label: "Cancelled",
-    icon: CircleMinusIcon,
-    iconClass: "fill-muted-foreground text-background",
+    icon: MinusIcon,
+    tone: "bg-muted-foreground text-background",
   },
 };
 
 const FALLBACK: StatusMeta = {
   label: "",
-  icon: CircleMinusIcon,
-  iconClass: "fill-muted-foreground text-background",
+  icon: MinusIcon,
+  tone: "bg-muted-foreground text-background",
 };
 
 export function StatusBadge({ status }: { status: string }) {
@@ -69,9 +69,13 @@ export function StatusBadge({ status }: { status: string }) {
   return (
     <Badge
       variant="outline"
-      className="h-6 gap-1.5 rounded-full px-3 font-medium"
+      className="h-6 gap-1.5 rounded-full pr-2.5 pl-1 font-medium"
     >
-      <Icon className={`size-4 ${meta.iconClass}`} />
+      <span
+        className={`flex size-3 shrink-0 items-center justify-center rounded-full ${meta.tone}`}
+      >
+        <Icon className="size-1.5" strokeWidth={3} />
+      </span>
       {meta.label || status}
     </Badge>
   );
