@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LeaveRequestForm } from "./forms";
-import { LeaveRowActions } from "./row-actions";
+import { LeaveDetailsDialog } from "./details-dialog";
 import { DateRange } from "@/components/date-range";
 import { StatusBadge } from "@/components/status-badge";
 
@@ -159,7 +159,7 @@ async function Content() {
                     {request.approverName ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <LeaveRowActions
+                    <LeaveDetailsDialog
                       request={request}
                       canDecide={canDecide}
                       canDelete={canDelete}

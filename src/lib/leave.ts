@@ -21,6 +21,8 @@ export type LeaveRequestItem = {
   status: string;
   reason: string | null;
   approverName: string | null;
+  createdAt: string;
+  decidedAt: string | null;
 };
 
 export type LeaveRequestInput = {
@@ -71,6 +73,8 @@ export async function listLeaveRequests(
     status: string;
     reason: string | null;
     approver_name: string | null;
+    created_at: string;
+    decided_at: string | null;
   }>(
     `SELECT lr.id,
             lr.employee_id,
@@ -82,7 +86,9 @@ export async function listLeaveRequests(
             lr.days::float8 AS days,
             lr.status,
             lr.reason,
-            a.first_name || ' ' || a.last_name AS approver_name
+            a.first_name || ' ' || a.last_name AS approver_name,
+            to_char(lr.created_at, 'YYYY-MM-DD HH24:MI') AS created_at,
+            to_char(lr.decided_at, 'YYYY-MM-DD HH24:MI') AS decided_at
      FROM leave_request lr
      JOIN employee e ON e.id = lr.employee_id
      JOIN leave_type lt ON lt.id = lr.leave_type_id
@@ -104,6 +110,8 @@ export async function listLeaveRequests(
     status: row.status,
     reason: row.reason,
     approverName: row.approver_name,
+    createdAt: row.created_at,
+    decidedAt: row.decided_at,
   }));
 }
 

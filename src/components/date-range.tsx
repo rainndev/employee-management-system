@@ -5,11 +5,33 @@ function toDate(value: string) {
   return new Date(`${value}T00:00:00`);
 }
 
-export function DateRange({ start, end }: { start: string; end: string }) {
+export function DateRange({
+  start,
+  end,
+  layout = "stacked",
+}: {
+  start: string;
+  end: string;
+  layout?: "stacked" | "inline";
+}) {
   if (start === end) {
     return (
-      <span className="whitespace-nowrap">
+      <span className="text-sm whitespace-nowrap">
         {format(toDate(start), "MMM d, yyyy")}
+      </span>
+    );
+  }
+
+  if (layout === "inline") {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1.5 text-sm whitespace-nowrap">
+        <span className="font-medium">
+          {format(toDate(start), "MMM d, yyyy")}
+        </span>
+        <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">
+          {format(toDate(end), "MMM d, yyyy")}
+        </span>
       </span>
     );
   }
@@ -19,7 +41,7 @@ export function DateRange({ start, end }: { start: string; end: string }) {
       <span className="text-sm font-medium">
         {format(toDate(start), "MMM d, yyyy")}
       </span>
-      <span className="mt-1 flex w-fit items-center gap-1 rounded-full border px-2 py-1 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
         <ArrowRightIcon className="size-3" />
         {format(toDate(end), "MMM d, yyyy")}
       </span>
