@@ -28,7 +28,7 @@ Forms use shadcn `Input`, `Textarea` and `Select`. Radix `Select` renders a hidd
 
 ## 1. Create the database and tables
 
-> **Already have these tables?** Skip this section and jump to step 2. Make sure your existing `"user"` table has the columns the app uses: `id`, `email`, `password_hash`, `role`, `is_active`, `created_at`.
+> **Already have these tables?** Run `db/migrations/001_add_timestamps.sql` in the Query Tool. It adds `created_at` / `updated_at` to every table (existing rows get the migration time) and installs a `set_updated_at` trigger that keeps `updated_at` current on every update. Then jump to step 2.
 
 Open **pgAdmin 4** and connect to your PostgreSQL server.
 
@@ -203,4 +203,8 @@ pnpm start        # run the production build
 pnpm lint         # ESLint
 pnpm format       # Prettier (with Tailwind class sorting)
 pnpm format:check # Prettier check
+pnpm db:schema    # apply db/schema.sql (fresh database)
+pnpm db:migrate   # run db/migrations/*.sql in order (existing database)
 ```
+
+Both database scripts read `DATABASE_URL` from `.env.local` and use `PSQL_PATH`, a standard PostgreSQL install path, or `psql` on `PATH` — in that order. Add `PSQL_PATH=...\psql.exe` to `.env.local` if it can't find `psql`.

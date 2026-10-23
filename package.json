@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:schema": "node scripts/db.mjs schema",
+    "db:migrate": "node scripts/db.mjs migrate"
   },
   "dependencies": {
     "@tanstack/react-table": "^9.3.1",

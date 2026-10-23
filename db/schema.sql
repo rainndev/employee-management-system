@@ -6,6 +6,9 @@
 --   1. Connect to your database, right-click the DB -> Query Tool
 --   2. Paste this whole file, press F5 (Execute)
 --
+-- Existing database? Run db/migrations/001_add_timestamps.sql first, because
+-- CREATE TABLE IF NOT EXISTS does not add new columns to existing tables.
+--
 -- Requires PostgreSQL 13+ (gen_random_uuid() is built into core).
 -- Note: "user" is a reserved keyword, so it must always be double-quoted.
 -- ============================================================================
@@ -23,6 +26,7 @@ BEGIN;
 -- DROP TABLE IF EXISTS "user" CASCADE;
 -- DROP TABLE IF EXISTS position CASCADE;
 -- DROP TABLE IF EXISTS department CASCADE;
+-- DROP FUNCTION IF EXISTS set_updated_at();
 
 -- ----------------------------------------------------------------------------
 -- DEPARTMENT
@@ -31,6 +35,8 @@ CREATE TABLE IF NOT EXISTS department (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name        text NOT NULL,
     description text,
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    updated_at  timestamptz NOT NULL DEFAULT now(),
     deleted_at  timestamptz
 );
 
@@ -45,6 +51,8 @@ CREATE TABLE IF NOT EXISTS position (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     title       text NOT NULL,
     description text,
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    updated_at  timestamptz NOT NULL DEFAULT now(),
     deleted_at  timestamptz
 );
 
@@ -61,6 +69,7 @@ CREATE TABLE IF NOT EXISTS "user" (
     role          text NOT NULL DEFAULT 'employee',
     is_active     boolean NOT NULL DEFAULT true,
     created_at    timestamptz NOT NULL DEFAULT now(),
+    updated_at    timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT user_email_key UNIQUE (email),
     CONSTRAINT user_role_check
         CHECK (role IN ('admin', 'hr', 'manager', 'employee'))
@@ -74,6 +83,8 @@ CREATE TABLE IF NOT EXISTS leave_type (
     name         text NOT NULL,
     default_days integer NOT NULL DEFAULT 0,
     is_paid      boolean NOT NULL DEFAULT true,
+    created_at   timestamptz NOT NULL DEFAULT now(),
+    updated_at   timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT leave_type_name_key UNIQUE (name),
     CONSTRAINT leave_type_default_days_check CHECK (default_days >= 0)
 );
@@ -96,6 +107,8 @@ CREATE TABLE IF NOT EXISTS employee (
     department_id uuid REFERENCES department (id) ON DELETE SET NULL,
     position_id   uuid REFERENCES position (id) ON DELETE SET NULL,
     manager_id    uuid REFERENCES employee (id) ON DELETE SET NULL,
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    updated_at    timestamptz NOT NULL DEFAULT now(),
     deleted_at    timestamptz,
     CONSTRAINT employee_no_key UNIQUE (employee_no),
     CONSTRAINT employee_user_id_key UNIQUE (user_id),
@@ -116,6 +129,8 @@ CREATE TABLE IF NOT EXISTS attendance (
     time_out    timestamptz,
     total_hours numeric(5, 2),
     status      text NOT NULL DEFAULT 'present',
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    updated_at  timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT attendance_employee_work_date_key UNIQUE (employee_id, work_date),
     CONSTRAINT attendance_status_check
         CHECK (status IN ('present', 'absent', 'late', 'half_day', 'on_leave', 'holiday')),
@@ -138,6 +153,8 @@ CREATE TABLE IF NOT EXISTS leave_request (
     approver_id   uuid REFERENCES employee (id) ON DELETE SET NULL,
     remark        text,
     decided_at    timestamptz,
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    updated_at    timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT leave_request_status_check
         CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
     CONSTRAINT leave_request_dates_check CHECK (end_date >= start_date),
@@ -154,6 +171,8 @@ CREATE TABLE IF NOT EXISTS leave_balance (
     year          integer NOT NULL,
     allocated     numeric(5, 2) NOT NULL DEFAULT 0,
     used          numeric(5, 2) NOT NULL DEFAULT 0,
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    updated_at    timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT leave_balance_employee_type_year_key
         UNIQUE (employee_id, leave_type_id, year),
     CONSTRAINT leave_balance_allocated_check CHECK (allocated >= 0),
@@ -171,5 +190,48 @@ CREATE INDEX IF NOT EXISTS leave_request_employee_id_idx   ON leave_request (emp
 CREATE INDEX IF NOT EXISTS leave_request_approver_id_idx   ON leave_request (approver_id);
 CREATE INDEX IF NOT EXISTS leave_request_leave_type_id_idx ON leave_request (leave_type_id);
 CREATE INDEX IF NOT EXISTS leave_balance_employee_id_idx   ON leave_balance (employee_id);
+
+-- ----------------------------------------------------------------------------
+-- updated_at maintenance
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_updated_at ON department;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON department
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON position;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON position
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON "user";
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON "user"
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON leave_type;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON leave_type
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON employee;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON employee
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON attendance;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON attendance
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON leave_request;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON leave_request
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS set_updated_at ON leave_balance;
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON leave_balance
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 COMMIT;
