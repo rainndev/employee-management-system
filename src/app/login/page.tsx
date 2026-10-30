@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "./login-form";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -16,30 +9,28 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="relative flex flex-1 items-center justify-center px-6 py-16">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
+    <AuthShell>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Sign in to pick up where you left off across people, leave, and
+          records.
+        </p>
       </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Sign in</CardTitle>
-          <CardDescription>
-            Welcome back to the employee management system.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <LoginForm />
-          <p className="text-sm text-muted-foreground">
-            No account yet?{" "}
-            <Link
-              href="/signup"
-              className="font-medium text-foreground underline"
-            >
-              Create one
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </main>
+
+      <div className="mt-8">
+        <LoginForm />
+      </div>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        New to Employee System?{" "}
+        <Link
+          href="/signup"
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

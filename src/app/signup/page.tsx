@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { SignupForm } from "./signup-form";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -16,30 +9,30 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <main className="relative flex flex-1 items-center justify-center px-6 py-16">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
+    <AuthShell>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Create your account
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Use your work email to get started. New accounts begin with employee
+          access — an admin can update your role later.
+        </p>
       </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Create account</CardTitle>
-          <CardDescription>
-            Sign up with your email and a password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <SignupForm />
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-foreground underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </main>
+
+      <div className="mt-8">
+        <SignupForm />
+      </div>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link
+          href="/login"
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
