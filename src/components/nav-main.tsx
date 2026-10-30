@@ -30,7 +30,7 @@ export function NavMain({
     <SidebarGroup>
       {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="gap-1.5">
           {items.map((item) => {
             const isActive =
               pathname === item.url || pathname.startsWith(`${item.url}/`);
