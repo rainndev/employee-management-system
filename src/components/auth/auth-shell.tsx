@@ -12,7 +12,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             href="/"
             className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-foreground text-background shadow-sm">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <UsersIcon className="size-4" strokeWidth={1.75} />
             </span>
             <span className="text-sm font-semibold tracking-tight">
