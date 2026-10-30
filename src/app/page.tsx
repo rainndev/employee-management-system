@@ -1,30 +1,30 @@
 import Link from "next/link";
+import { Hero45 } from "@/components/hero45";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Employee Management System
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sign in, or create an account to get started.
-        </p>
-      </div>
+    <div className="relative flex min-h-full flex-col">
+      <header className="absolute inset-x-0 top-0 z-30">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
+          <Link href="/" className="font-semibold tracking-tight">
+            Employee System
+          </Link>
 
-      <div className="flex gap-3">
-        <Button asChild>
-          <Link href="/login">Sign in</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/signup">Sign up</Link>
-        </Button>
-      </div>
-    </main>
+          <div className="flex items-center gap-1.5">
+            <ThemeToggle />
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/login">Sign in</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/signup">Get started</Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <Hero45 />
+    </div>
   );
 }
