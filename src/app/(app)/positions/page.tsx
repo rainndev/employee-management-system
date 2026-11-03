@@ -3,16 +3,8 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/dal";
 import { canManage } from "@/lib/roles";
 import { listPositions } from "@/lib/positions";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PositionForm } from "./forms";
-import { PositionRowActions } from "./row-actions";
+import { PositionsTable } from "./positions-table";
 
 export const metadata: Metadata = {
   title: "Positions",
@@ -50,41 +42,7 @@ async function Content() {
       </div>
 
       <div className="overflow-hidden rounded-xl border p-4">
-        <Table>
-          <TableHeader className="[&_th]:text-muted-foreground">
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
-              {manage && <TableHead className="w-10" />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {positions.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={manage ? 3 : 2}
-                  className="text-muted-foreground"
-                >
-                  No positions yet.
-                </TableCell>
-              </TableRow>
-            )}
-
-            {positions.map((position) => (
-              <TableRow key={position.id}>
-                <TableCell className="font-medium">{position.title}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {position.description ?? "—"}
-                </TableCell>
-                {manage && (
-                  <TableCell className="text-right">
-                    <PositionRowActions position={position} />
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <PositionsTable positions={positions} manage={manage} />
       </div>
     </div>
   );

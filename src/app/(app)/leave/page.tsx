@@ -10,18 +10,8 @@ import {
 import { listEmployeeOptions } from "@/lib/employees";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { LeaveRequestForm } from "./forms";
-import { LeaveDetailsDialog } from "./details-dialog";
-import { DateRange } from "@/components/date-range";
-import { StatusBadge } from "@/components/status-badge";
+import { LeaveTable } from "./leave-table";
 
 export const metadata: Metadata = {
   title: "Leave",
@@ -57,7 +47,6 @@ async function Content() {
   ]);
 
   const canFileOwn = manage || myEmployeeId !== null;
-  const canDecide = approveAll && myEmployeeId !== null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,73 +92,13 @@ async function Content() {
       )}
 
       <div className="overflow-hidden rounded-xl border p-4">
-        <Table>
-          <TableHeader className="[&_th]:text-muted-foreground">
-            <TableRow>
-              {approveAll && <TableHead>Employee</TableHead>}
-              <TableHead>Type</TableHead>
-              <TableHead>Dates</TableHead>
-              <TableHead>Days</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Approver</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requests.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={approveAll ? 7 : 6}
-                  className="text-muted-foreground"
-                >
-                  No leave requests yet.
-                </TableCell>
-              </TableRow>
-            )}
-
-            {requests.map((request) => {
-              const canDelete =
-                manage ||
-                (myEmployeeId !== null &&
-                  request.employeeId === myEmployeeId &&
-                  request.status === "pending");
-
-              return (
-                <TableRow key={request.id}>
-                  {approveAll && (
-                    <TableCell>
-                      <div className="font-medium">{request.employeeName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {request.employeeNo}
-                      </div>
-                    </TableCell>
-                  )}
-                  <TableCell>{request.leaveType}</TableCell>
-                  <TableCell>
-                    <DateRange
-                      start={request.startDate}
-                      end={request.endDate}
-                    />
-                  </TableCell>
-                  <TableCell>{request.days}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={request.status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {request.approverName ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <LeaveDetailsDialog
-                      request={request}
-                      canDecide={canDecide}
-                      canDelete={canDelete}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <LeaveTable
+          requests={requests}
+          approveAll={approveAll}
+          manage={manage}
+          myEmployeeId={myEmployeeId}
+          leaveTypes={leaveTypes.map((type) => type.name)}
+        />
       </div>
     </div>
   );

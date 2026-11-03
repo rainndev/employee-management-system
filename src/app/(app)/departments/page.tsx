@@ -3,16 +3,8 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/dal";
 import { canManage } from "@/lib/roles";
 import { listDepartments } from "@/lib/departments";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DepartmentForm } from "./forms";
-import { DepartmentRowActions } from "./row-actions";
+import { DepartmentsTable } from "./departments-table";
 
 export const metadata: Metadata = {
   title: "Departments",
@@ -50,41 +42,7 @@ async function Content() {
       </div>
 
       <div className="overflow-hidden rounded-xl border p-4">
-        <Table>
-          <TableHeader className="[&_th]:text-muted-foreground">
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              {manage && <TableHead className="w-10" />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {departments.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={manage ? 3 : 2}
-                  className="text-muted-foreground"
-                >
-                  No departments yet.
-                </TableCell>
-              </TableRow>
-            )}
-
-            {departments.map((department) => (
-              <TableRow key={department.id}>
-                <TableCell className="font-medium">{department.name}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {department.description ?? "—"}
-                </TableCell>
-                {manage && (
-                  <TableCell className="text-right">
-                    <DepartmentRowActions department={department} />
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <DepartmentsTable departments={departments} manage={manage} />
       </div>
     </div>
   );

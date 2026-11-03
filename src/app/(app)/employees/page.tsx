@@ -9,17 +9,8 @@ import {
 } from "@/lib/employees";
 import { listDepartments } from "@/lib/departments";
 import { listPositions } from "@/lib/positions";
-import { StatusBadge } from "@/components/status-badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { EmployeeForm } from "./forms";
-import { EmployeeRowActions } from "./row-actions";
+import { EmployeesTable } from "./employees-table";
 
 export const metadata: Metadata = {
   title: "Employees",
@@ -81,72 +72,14 @@ async function Content() {
       </div>
 
       <div className="overflow-hidden rounded-xl border p-4">
-        <Table>
-          <TableHeader className="[&_th]:text-muted-foreground">
-            <TableRow>
-              <TableHead>No.</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Hire date</TableHead>
-              {manage && <TableHead className="w-10" />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {employees.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={manage ? 7 : 6}
-                  className="text-muted-foreground"
-                >
-                  No employees yet.
-                </TableCell>
-              </TableRow>
-            )}
-
-            {employees.map((employee) => {
-              const rowUsers =
-                employee.userId && employee.userEmail
-                  ? [
-                      ...users,
-                      { id: employee.userId, label: employee.userEmail },
-                    ]
-                  : users;
-              const rowManagers = managers.filter(
-                (manager) => manager.id !== employee.id
-              );
-
-              return (
-                <TableRow key={employee.id}>
-                  <TableCell className="text-muted-foreground">
-                    {employee.employeeNo}
-                  </TableCell>
-                  <TableCell className="font-medium">{employee.name}</TableCell>
-                  <TableCell>{employee.department ?? "—"}</TableCell>
-                  <TableCell>{employee.position ?? "—"}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={employee.status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {employee.hireDate || "—"}
-                  </TableCell>
-                  {manage && (
-                    <TableCell className="text-right">
-                      <EmployeeRowActions
-                        employee={employee}
-                        departments={departmentOptions}
-                        positions={positionOptions}
-                        managers={rowManagers}
-                        users={rowUsers}
-                      />
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <EmployeesTable
+          employees={employees}
+          manage={manage}
+          departments={departmentOptions}
+          positions={positionOptions}
+          managers={managers}
+          users={users}
+        />
       </div>
     </div>
   );

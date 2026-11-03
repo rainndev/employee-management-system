@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useTransition } from "react";
+import { useActionState, useMemo, useTransition } from "react";
 import { ChevronDownIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminUserRow } from "@/lib/admin";
@@ -18,14 +18,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DataTable,
+  type DataTableColumn,
+  type DataTableFilter,
+} from "@/components/data-table";
 import { FieldError } from "@/components/form-feedback";
+
+const ROLE_OPTIONS = ROLES.map((role) => ({
+  value: role,
+  label: role.charAt(0).toUpperCase() + role.slice(1),
+}));
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "disabled", label: "Disabled" },
+];
+
+function getSearchText(user: AdminUserRow) {
+  return [
+    user.email,
+    user.role,
+    user.isActive ? "active" : "disabled",
+    user.createdAt,
+  ].join(" ");
+}
 
 function PasswordResetForm({
   userId,
@@ -77,7 +93,13 @@ function PasswordResetForm({
   );
 }
 
-function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
+function RoleDropdown({
+  user,
+  isSelf,
+}: {
+  user: AdminUserRow;
+  isSelf: boolean;
+}) {
   const [pending, startTransition] = useTransition();
 
   function changeRole(value: string) {
@@ -95,6 +117,46 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
     });
   }
 
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isSelf || pending}
+          className="w-28 justify-between capitalize"
+        >
+          {user.role}
+          <ChevronDownIcon className="size-3.5 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-40">
+        <DropdownMenuLabel>Role</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={user.role} onValueChange={changeRole}>
+          {ROLES.map((role) => (
+            <DropdownMenuRadioItem
+              key={role}
+              value={role}
+              className="capitalize"
+            >
+              {role}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ActiveDropdown({
+  user,
+  isSelf,
+}: {
+  user: AdminUserRow;
+  isSelf: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+
   function changeActive(value: string) {
     startTransition(async () => {
       try {
@@ -109,87 +171,29 @@ function UserRow({ user, isSelf }: { user: AdminUserRow; isSelf: boolean }) {
   }
 
   return (
-    <TableRow>
-      <TableCell>
-        {user.email}
-        {isSelf && (
-          <span className="ml-2 text-xs text-muted-foreground">(you)</span>
-        )}
-      </TableCell>
-
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSelf || pending}
-              className="w-28 justify-between capitalize"
-            >
-              {user.role}
-              <ChevronDownIcon className="size-3.5 opacity-60" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-40">
-            <DropdownMenuLabel>Role</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={user.role}
-              onValueChange={changeRole}
-            >
-              {ROLES.map((role) => (
-                <DropdownMenuRadioItem
-                  key={role}
-                  value={role}
-                  className="capitalize"
-                >
-                  {role}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSelf || pending}
-              className="w-28 justify-between"
-            >
-              {user.isActive ? "Active" : "Disabled"}
-              <ChevronDownIcon className="size-3.5 opacity-60" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-40">
-            <DropdownMenuLabel>Status</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={user.isActive ? "true" : "false"}
-              onValueChange={changeActive}
-            >
-              <DropdownMenuRadioItem value="true">Active</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="false">
-                Disabled
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-
-      <TableCell>
-        {isSelf ? (
-          <span className="text-xs text-muted-foreground">
-            Not available for your own account
-          </span>
-        ) : (
-          <PasswordResetForm userId={user.id} email={user.email} />
-        )}
-      </TableCell>
-
-      <TableCell className="text-muted-foreground">{user.createdAt}</TableCell>
-    </TableRow>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isSelf || pending}
+          className="w-28 justify-between"
+        >
+          {user.isActive ? "Active" : "Disabled"}
+          <ChevronDownIcon className="size-3.5 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-40">
+        <DropdownMenuLabel>Status</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={user.isActive ? "true" : "false"}
+          onValueChange={changeActive}
+        >
+          <DropdownMenuRadioItem value="true">Active</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="false">Disabled</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -200,32 +204,99 @@ export function UsersTable({
   users: AdminUserRow[];
   currentUserId: string;
 }) {
-  if (users.length === 0) {
-    return <p className="text-sm text-muted-foreground">No users yet.</p>;
-  }
+  const columns = useMemo<DataTableColumn<AdminUserRow>[]>(
+    () => [
+      {
+        id: "email",
+        accessorFn: (user) => user.email,
+        header: "Email",
+        cell: ({ row }) => (
+          <span>
+            {row.original.email}
+            {row.original.id === currentUserId && (
+              <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+            )}
+          </span>
+        ),
+      },
+      {
+        id: "role",
+        accessorFn: (user) => user.role,
+        header: "Role",
+        cell: ({ row }) => (
+          <RoleDropdown
+            user={row.original}
+            isSelf={row.original.id === currentUserId}
+          />
+        ),
+      },
+      {
+        id: "status",
+        accessorFn: (user) => (user.isActive ? "active" : "disabled"),
+        header: "Status",
+        cell: ({ row }) => (
+          <ActiveDropdown
+            user={row.original}
+            isSelf={row.original.id === currentUserId}
+          />
+        ),
+      },
+      {
+        id: "password",
+        header: "Reset password",
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.id === currentUserId ? (
+            <span className="text-xs text-muted-foreground">
+              Not available for your own account
+            </span>
+          ) : (
+            <PasswordResetForm
+              userId={row.original.id}
+              email={row.original.email}
+            />
+          ),
+      },
+      {
+        id: "createdAt",
+        accessorFn: (user) => user.createdAt,
+        header: "Created",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {row.original.createdAt}
+          </span>
+        ),
+      },
+    ],
+    [currentUserId]
+  );
+
+  const filters = useMemo<DataTableFilter<AdminUserRow>[]>(
+    () => [
+      {
+        id: "role",
+        allLabel: "All roles",
+        options: ROLE_OPTIONS,
+        getValue: (user) => user.role,
+      },
+      {
+        id: "status",
+        allLabel: "All statuses",
+        options: STATUS_OPTIONS,
+        getValue: (user) => (user.isActive ? "active" : "disabled"),
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="overflow-hidden rounded-xl border p-4">
-      <Table>
-        <TableHeader className="[&_th]:text-muted-foreground">
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Reset password</TableHead>
-            <TableHead>Created</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              isSelf={user.id === currentUserId}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      data={users}
+      columns={columns}
+      filters={filters}
+      getSearchText={getSearchText}
+      searchPlaceholder="Search email or role..."
+      emptyMessage="No users match your search."
+    />
   );
 }
