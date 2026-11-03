@@ -24,10 +24,10 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Employee Management System",
-    template: "%s | Employee Management System",
+    default: "CoreHR",
+    template: "%s | CoreHR",
   },
-  description: "Employee management system",
+  description: "CoreHR — people, leave, and attendance in one place.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

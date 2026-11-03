@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { UsersIcon } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -10,14 +10,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <header className="mb-12 flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-label="CoreHR home"
+            className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <UsersIcon className="size-4" strokeWidth={1.75} />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">
-              Employee System
-            </span>
+            <BrandLogo textClassName="text-sm" />
           </Link>
           <ThemeToggle />
         </header>

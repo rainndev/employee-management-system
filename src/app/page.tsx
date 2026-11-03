@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand-logo";
 import { Hero45 } from "@/components/hero45";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -8,8 +9,8 @@ export default function Home() {
     <div className="relative flex min-h-full flex-col">
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
-          <Link href="/" className="font-semibold tracking-tight">
-            Employee System
+          <Link href="/" aria-label="CoreHR home">
+            <BrandLogo textClassName="text-sm" />
           </Link>
 
           <div className="flex items-center gap-1.5">

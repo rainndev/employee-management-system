@@ -2,6 +2,7 @@
 
 import { NavMain, type NavItem } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -95,8 +96,8 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/dashboard">
-                <BriefcaseIcon className="size-5!" strokeWidth={1.5} />
-                <span className="text-base font-semibold">Employee System</span>
+                <BrandMark className="size-5! text-primary" />
+                <span className="text-base font-semibold">CoreHR</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

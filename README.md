@@ -1,4 +1,4 @@
-# Employee Management System
+# CoreHR
 
 Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + PostgreSQL (`pg`) + shadcn/ui.
 

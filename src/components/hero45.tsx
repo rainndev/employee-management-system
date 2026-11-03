@@ -74,7 +74,7 @@ const IMAGES: [HeroImage, ...HeroImage[]] = [
 ];
 
 const Hero45 = ({
-  badge = "Employee management",
+  badge = "CoreHR",
   heading = "Your people, leave, and attendance in one place.",
   features = FEATURES,
   images = IMAGES,
