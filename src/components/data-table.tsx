@@ -22,13 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DropdownSelect } from "@/components/dropdown-select";
 import {
   Table,
   TableBody,
@@ -163,7 +157,7 @@ export function DataTable<T extends RowData>({
         {filters.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             {filters.map((filter) => (
-              <Select
+              <DropdownSelect
                 key={filter.id}
                 value={filterValues[filter.id] ?? ALL}
                 onValueChange={(value) => {
@@ -173,19 +167,15 @@ export function DataTable<T extends RowData>({
                   }));
                   resetPage();
                 }}
-              >
-                <SelectTrigger size="sm" aria-label={filter.allLabel}>
-                  <SelectValue placeholder={filter.allLabel} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>{filter.allLabel}</SelectItem>
-                  {filter.options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={[
+                  { value: ALL, label: filter.allLabel },
+                  ...filter.options,
+                ]}
+                ariaLabel={filter.allLabel}
+                size="sm"
+                className="w-auto"
+                contentClassName="w-auto min-w-48"
+              />
             ))}
 
             {hasActiveQuery && (
@@ -279,24 +269,20 @@ export function DataTable<T extends RowData>({
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground">Rows per page</span>
-          <Select
+          <DropdownSelect
             value={String(pagination.pageSize)}
             onValueChange={(value) => {
               table.setPageSize(Number(value));
               resetPage();
             }}
-          >
-            <SelectTrigger size="sm" aria-label="Rows per page">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={PAGE_SIZES.map((pageSize) => ({
+              value: String(pageSize),
+              label: String(pageSize),
+            }))}
+            ariaLabel="Rows per page"
+            size="sm"
+            className="w-20"
+          />
 
           <Button
             type="button"

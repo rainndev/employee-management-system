@@ -23,14 +23,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownSelect } from "@/components/dropdown-select";
 import { DatePicker } from "@/components/date-picker";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
@@ -41,6 +35,22 @@ type Props = {
   managers: Option[];
   users: Option[];
 };
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "active" },
+  { value: "on_leave", label: "on_leave" },
+  { value: "inactive", label: "inactive" },
+  { value: "terminated", label: "terminated" },
+];
+
+const GENDER_OPTIONS = [
+  { value: NONE_VALUE, label: "—" },
+  { value: "male", label: "male" },
+  { value: "female", label: "female" },
+  { value: "other", label: "other" },
+];
+
+const NONE_OPTION = { value: NONE_VALUE, label: "— None —" };
 
 function Field({
   label,
@@ -170,21 +180,14 @@ export function EmployeeForm({
               htmlFor={fieldId("status")}
               error={errors?.status}
             >
-              <Select name="status" defaultValue={employee?.status ?? "active"}>
-                <SelectTrigger
-                  id={fieldId("status")}
-                  className="w-full"
-                  aria-invalid={invalid("status")}
-                >
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">active</SelectItem>
-                  <SelectItem value="on_leave">on_leave</SelectItem>
-                  <SelectItem value="inactive">inactive</SelectItem>
-                  <SelectItem value="terminated">terminated</SelectItem>
-                </SelectContent>
-              </Select>
+              <DropdownSelect
+                name="status"
+                id={fieldId("status")}
+                defaultValue={employee?.status ?? "active"}
+                options={STATUS_OPTIONS}
+                placeholder="Select status"
+                ariaInvalid={invalid("status")}
+              />
             </Field>
 
             <Field
@@ -233,24 +236,14 @@ export function EmployeeForm({
               htmlFor={fieldId("gender")}
               error={errors?.gender}
             >
-              <Select
+              <DropdownSelect
                 name="gender"
+                id={fieldId("gender")}
                 defaultValue={employee?.gender || NONE_VALUE}
-              >
-                <SelectTrigger
-                  id={fieldId("gender")}
-                  className="w-full"
-                  aria-invalid={invalid("gender")}
-                >
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_VALUE}>—</SelectItem>
-                  <SelectItem value="male">male</SelectItem>
-                  <SelectItem value="female">female</SelectItem>
-                  <SelectItem value="other">other</SelectItem>
-                </SelectContent>
-              </Select>
+                options={GENDER_OPTIONS}
+                placeholder="—"
+                ariaInvalid={invalid("gender")}
+              />
             </Field>
 
             <Field
@@ -286,26 +279,20 @@ export function EmployeeForm({
               htmlFor={fieldId("departmentId")}
               error={errors?.departmentId}
             >
-              <Select
+              <DropdownSelect
                 name="departmentId"
+                id={fieldId("departmentId")}
                 defaultValue={employee?.departmentId || NONE_VALUE}
-              >
-                <SelectTrigger
-                  id={fieldId("departmentId")}
-                  className="w-full"
-                  aria-invalid={invalid("departmentId")}
-                >
-                  <SelectValue placeholder="— None —" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
-                  {departments.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={[
+                  NONE_OPTION,
+                  ...departments.map((option) => ({
+                    value: option.id,
+                    label: option.label,
+                  })),
+                ]}
+                placeholder="— None —"
+                ariaInvalid={invalid("departmentId")}
+              />
             </Field>
 
             <Field
@@ -313,26 +300,20 @@ export function EmployeeForm({
               htmlFor={fieldId("positionId")}
               error={errors?.positionId}
             >
-              <Select
+              <DropdownSelect
                 name="positionId"
+                id={fieldId("positionId")}
                 defaultValue={employee?.positionId || NONE_VALUE}
-              >
-                <SelectTrigger
-                  id={fieldId("positionId")}
-                  className="w-full"
-                  aria-invalid={invalid("positionId")}
-                >
-                  <SelectValue placeholder="— None —" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
-                  {positions.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={[
+                  NONE_OPTION,
+                  ...positions.map((option) => ({
+                    value: option.id,
+                    label: option.label,
+                  })),
+                ]}
+                placeholder="— None —"
+                ariaInvalid={invalid("positionId")}
+              />
             </Field>
 
             <Field
@@ -340,26 +321,20 @@ export function EmployeeForm({
               htmlFor={fieldId("managerId")}
               error={errors?.managerId}
             >
-              <Select
+              <DropdownSelect
                 name="managerId"
+                id={fieldId("managerId")}
                 defaultValue={employee?.managerId || NONE_VALUE}
-              >
-                <SelectTrigger
-                  id={fieldId("managerId")}
-                  className="w-full"
-                  aria-invalid={invalid("managerId")}
-                >
-                  <SelectValue placeholder="— None —" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
-                  {managers.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={[
+                  NONE_OPTION,
+                  ...managers.map((option) => ({
+                    value: option.id,
+                    label: option.label,
+                  })),
+                ]}
+                placeholder="— None —"
+                ariaInvalid={invalid("managerId")}
+              />
             </Field>
 
             <Field
@@ -367,26 +342,20 @@ export function EmployeeForm({
               htmlFor={fieldId("userId")}
               error={errors?.userId}
             >
-              <Select
+              <DropdownSelect
                 name="userId"
+                id={fieldId("userId")}
                 defaultValue={employee?.userId || NONE_VALUE}
-              >
-                <SelectTrigger
-                  id={fieldId("userId")}
-                  className="w-full"
-                  aria-invalid={invalid("userId")}
-                >
-                  <SelectValue placeholder="— None —" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_VALUE}>— None —</SelectItem>
-                  {users.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={[
+                  NONE_OPTION,
+                  ...users.map((option) => ({
+                    value: option.id,
+                    label: option.label,
+                  })),
+                ]}
+                placeholder="— None —"
+                ariaInvalid={invalid("userId")}
+              />
             </Field>
           </div>
 

@@ -18,14 +18,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownSelect } from "@/components/dropdown-select";
 import { DatePicker } from "@/components/date-picker";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 
@@ -106,22 +100,16 @@ export function LeaveRequestForm({
               htmlFor={fieldId("employeeId")}
               error={state?.errors?.employeeId}
             >
-              <Select name="employeeId">
-                <SelectTrigger
-                  id={fieldId("employeeId")}
-                  className="w-full"
-                  aria-invalid={Boolean(state?.errors?.employeeId)}
-                >
-                  <SelectValue placeholder="— Select employee —" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DropdownSelect
+                name="employeeId"
+                id={fieldId("employeeId")}
+                options={employees.map((option) => ({
+                  value: option.id,
+                  label: option.label,
+                }))}
+                placeholder="— Select employee —"
+                ariaInvalid={Boolean(state?.errors?.employeeId)}
+              />
             </Field>
           )}
 
@@ -130,22 +118,16 @@ export function LeaveRequestForm({
             htmlFor={fieldId("leaveTypeId")}
             error={state?.errors?.leaveTypeId}
           >
-            <Select name="leaveTypeId">
-              <SelectTrigger
-                id={fieldId("leaveTypeId")}
-                className="w-full"
-                aria-invalid={Boolean(state?.errors?.leaveTypeId)}
-              >
-                <SelectValue placeholder="— Select type —" />
-              </SelectTrigger>
-              <SelectContent>
-                {leaveTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DropdownSelect
+              name="leaveTypeId"
+              id={fieldId("leaveTypeId")}
+              options={leaveTypes.map((type) => ({
+                value: type.id,
+                label: type.name,
+              }))}
+              placeholder="— Select type —"
+              ariaInvalid={Boolean(state?.errors?.leaveTypeId)}
+            />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-3">
