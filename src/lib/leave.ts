@@ -116,6 +116,13 @@ export class PastLeaveDateError extends Error {
   }
 }
 
+export class LeaveTypeNotAvailableError extends Error {
+  constructor() {
+    super("The selected leave type is no longer available.");
+    this.name = "LeaveTypeNotAvailableError";
+  }
+}
+
 function formatDays(value: number) {
   return Number.isInteger(value)
     ? String(value)
@@ -150,6 +157,7 @@ export async function ensureLeaveBalances(
     `INSERT INTO leave_balance (employee_id, leave_type_id, year, allocated)
      SELECT $1, lt.id, $2, lt.default_days
      FROM leave_type lt
+     WHERE lt.deleted_at IS NULL
      ON CONFLICT (employee_id, leave_type_id, year) DO NOTHING`,
     [employeeId, year]
   );
@@ -164,6 +172,7 @@ export async function listLeaveTypes(): Promise<LeaveType[]> {
   }>(
     `SELECT id, name, default_days, is_paid
      FROM leave_type
+     WHERE deleted_at IS NULL
      ORDER BY name ASC`
   );
 
@@ -183,6 +192,7 @@ export async function getLeaveBalances(
     `INSERT INTO leave_balance (employee_id, leave_type_id, year, allocated)
      SELECT $1, lt.id, $2, lt.default_days
      FROM leave_type lt
+     WHERE lt.deleted_at IS NULL
      ON CONFLICT (employee_id, leave_type_id, year) DO NOTHING`,
     [employeeId, year]
   );
@@ -211,7 +221,9 @@ export async function getLeaveBalances(
          AND EXTRACT(YEAR FROM start_date)::int = $2
        GROUP BY leave_type_id
      ) p ON p.leave_type_id = lb.leave_type_id
-     WHERE lb.employee_id = $1 AND lb.year = $2
+     WHERE lb.employee_id = $1
+       AND lb.year = $2
+       AND lt.deleted_at IS NULL
      ORDER BY lt.name ASC`,
     [employeeId, year]
   );
@@ -405,6 +417,15 @@ export async function createLeaveRequest(
       throw new EmployeeNotEligibleError(
         "Leave can only be filed for an active employee."
       );
+    }
+
+    const { rowCount: leaveTypeCount } = await client.query(
+      "SELECT 1 FROM leave_type WHERE id = $1 AND deleted_at IS NULL",
+      [input.leaveTypeId]
+    );
+
+    if (!leaveTypeCount) {
+      throw new LeaveTypeNotAvailableError();
     }
 
     await ensureLeaveBalances(client, input.employeeId, year);

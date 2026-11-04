@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { getAdminStats, listUsers } from "@/lib/admin";
+import { listAdminLeaveTypes } from "@/lib/leave-types";
 import { requireAdmin } from "@/lib/dal";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { UsersTable } from "./users-table";
+import { LeaveTypesManager } from "./leave-types-manager";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -30,7 +32,11 @@ export default function AdminPage() {
 
 async function AdminContent() {
   const admin = await requireAdmin();
-  const [stats, users] = await Promise.all([getAdminStats(), listUsers()]);
+  const [stats, users, leaveTypes] = await Promise.all([
+    getAdminStats(),
+    listUsers(),
+    listAdminLeaveTypes(),
+  ]);
 
   const cards = [
     { label: "Employees", value: stats.employees },
@@ -75,6 +81,10 @@ async function AdminContent() {
           </p>
         </div>
         <UsersTable users={users} currentUserId={admin.id} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <LeaveTypesManager leaveTypes={leaveTypes} />
       </section>
     </div>
   );

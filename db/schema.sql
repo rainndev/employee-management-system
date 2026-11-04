@@ -93,11 +93,15 @@ CREATE TABLE IF NOT EXISTS leave_type (
     name         text NOT NULL,
     default_days integer NOT NULL DEFAULT 0,
     is_paid      boolean NOT NULL DEFAULT true,
+    deleted_at   timestamptz,
     created_at   timestamptz NOT NULL DEFAULT now(),
     updated_at   timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT leave_type_name_key UNIQUE (name),
     CONSTRAINT leave_type_default_days_check CHECK (default_days >= 0)
 );
+
+-- Names are unique among active leave types and are case-insensitive.
+CREATE UNIQUE INDEX IF NOT EXISTS leave_type_name_active_key
+    ON leave_type (lower(name)) WHERE deleted_at IS NULL;
 
 -- ----------------------------------------------------------------------------
 -- EMPLOYEE

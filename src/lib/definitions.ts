@@ -159,6 +159,26 @@ export const ProfileEmployeeSchema = z
     path: ["birthdate"],
   });
 
+export const LeaveTypeSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: "Name is required." })
+    .max(50, { error: "Keep it under 50 characters." }),
+  defaultDays: z
+    .string()
+    .trim()
+    .min(1, { error: "Default days is required." })
+    .refine((value) => /^-?\d+$/.test(value), {
+      error: "Use a whole number of days.",
+    })
+    .transform((value) => Number(value))
+    .refine((value) => value >= 0, { error: "Days cannot be negative." })
+    .refine((value) => value <= 365, {
+      error: "Keep it at 365 days or fewer.",
+    }),
+});
+
 export const DepartmentSchema = z.object({
   name: z
     .string()

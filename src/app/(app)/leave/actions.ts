@@ -15,6 +15,7 @@ import {
   LeaveRequestNotCancellableError,
   LeaveRequestNotFoundError,
   LeaveRequestNotPendingError,
+  LeaveTypeNotAvailableError,
   NotTeamMemberError,
   PastLeaveDateError,
   SelfApprovalError,
@@ -105,6 +106,10 @@ export async function createLeaveRequestAction(
     }
 
     if (error instanceof EmployeeNotEligibleError) {
+      return { message: error.message };
+    }
+
+    if (error instanceof LeaveTypeNotAvailableError) {
       return { message: error.message };
     }
 

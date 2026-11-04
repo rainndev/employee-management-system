@@ -4,7 +4,7 @@ VALUES
   ('Vacation', 15, true),
   ('Sick', 10, true),
   ('Unpaid', 0, false)
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- Sample departments. Existing departments (including soft-deleted ones) are
 -- left untouched so custom descriptions are not overwritten.
