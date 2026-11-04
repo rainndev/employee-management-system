@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { EmployeeListItem } from "@/lib/employees";
+import type { EmployeeDirectoryItem } from "@/lib/employees";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,19 +23,27 @@ const VISIBLE_EMPLOYEES = 5;
 
 export function EmployeesTableCard({
   employees,
+  title = "Employees",
+  description = "Your employee directory.",
+  emptyMessage = "No employees yet.",
+  viewAllHref = "/employees",
 }: {
-  employees: EmployeeListItem[];
+  employees: EmployeeDirectoryItem[];
+  title?: string;
+  description?: string;
+  emptyMessage?: string;
+  viewAllHref?: string;
 }) {
   const visible = employees.slice(0, VISIBLE_EMPLOYEES);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Employees</CardTitle>
-        <CardDescription>Your employee directory.</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
         <CardAction>
           <Button asChild variant="ghost" size="sm">
-            <Link href="/employees">View all</Link>
+            <Link href={viewAllHref}>View all</Link>
           </Button>
         </CardAction>
       </CardHeader>
@@ -58,7 +66,7 @@ export function EmployeesTableCard({
                   colSpan={5}
                   className="text-center text-muted-foreground"
                 >
-                  No employees yet.
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}

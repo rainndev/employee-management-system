@@ -107,6 +107,19 @@ Each role sees four metrics on `/dashboard`, scoped to what they can act on:
 
 Counts come from `src/lib/analytics.ts`; manager metrics are scoped to employees whose `manager_id` is the manager's own employee record.
 
+### Dashboard tables
+
+Each dashboard also has a role-scoped table with a **View all** link:
+
+| Role | Tables |
+| --- | --- |
+| admin | Employees (all) and Pending approvals (all) → `/employees`, `/leave` |
+| hr | Employees (all) and Pending approvals (all) → `/employees`, `/leave` |
+| manager | Team members and Pending approvals (direct reports only) → `/employees`, `/leave` |
+| employee | My leave requests → `/leave` |
+
+Manager directory and approval tables are filtered by `manager_id`; managers never receive full employee edit records on the dashboard.
+
 Admins and managers also get a **Joined users** area chart under the cards — daily signups for the last 7 / 30 / 90 days, defaulting to 7 days (`src/components/signups-chart.tsx`).
 
 ### Leave requests need an employee record

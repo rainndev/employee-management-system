@@ -2,11 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import { Client } from "pg";
-import {
-  adminDatabaseUrl,
-  TEST_DB_NAME,
-  testDatabaseUrl,
-} from "./config";
+import { adminDatabaseUrl, TEST_DB_NAME, testDatabaseUrl } from "./config";
 
 const PASSWORD = "Passw0rd!";
 
@@ -84,12 +80,7 @@ async function seedFixtures(client: Client) {
     "manager",
     passwordHash
   );
-  const hrUserId = await insertUser(
-    client,
-    "hr@e2e.test",
-    "hr",
-    passwordHash
-  );
+  const hrUserId = await insertUser(client, "hr@e2e.test", "hr", passwordHash);
   const adminUserId = await insertUser(
     client,
     "admin@e2e.test",
@@ -147,6 +138,12 @@ async function seedFixtures(client: Client) {
   const weekendUserId = await insertUser(
     client,
     "weekend@e2e.test",
+    "employee",
+    passwordHash
+  );
+  const dashboardUserId = await insertUser(
+    client,
+    "dashboard@e2e.test",
     "employee",
     passwordHash
   );
@@ -289,6 +286,16 @@ async function seedFixtures(client: Client) {
     address: "42 Secret Lane",
   });
 
+  const dashboardPendingId = await insertEmployee(client, {
+    employeeNo: "DASH-1000",
+    firstName: "Dashboard",
+    lastName: "Pending",
+    userId: dashboardUserId,
+    managerId,
+    departmentId,
+    positionId,
+  });
+
   const { rows: leaveTypeRows } = await client.query<{
     id: string;
     name: string;
@@ -316,6 +323,13 @@ async function seedFixtures(client: Client) {
       rejectId,
       leaveType("Sick"),
     ]
+  );
+
+  await client.query(
+    `INSERT INTO leave_request
+       (employee_id, leave_type_id, start_date, end_date, days, reason, status)
+     VALUES ($1, $2, CURRENT_DATE + 7, CURRENT_DATE + 7, 1, 'Dashboard pending fixture', 'pending')`,
+    [dashboardPendingId, leaveType("Vacation")]
   );
 
   await client.query(

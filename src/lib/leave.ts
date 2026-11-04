@@ -236,6 +236,10 @@ export type LeaveListScope = {
   // Manager view: the manager's own employee id. Includes their own requests
   // plus requests from employees who report directly to them.
   managerEmployeeId?: string;
+  status?: string;
+  excludeEmployeeId?: string;
+  limit?: number;
+  order?: "asc" | "desc";
 };
 
 // JOINs employee, leave_type and the approving employee.
@@ -243,7 +247,7 @@ export async function listLeaveRequests(
   scope: LeaveListScope = {}
 ): Promise<LeaveRequestItem[]> {
   const clauses: string[] = [];
-  const params: string[] = [];
+  const params: (string | number)[] = [];
 
   if (scope.employeeId) {
     params.push(scope.employeeId);
@@ -255,7 +259,25 @@ export async function listLeaveRequests(
     );
   }
 
+  if (scope.status) {
+    params.push(scope.status);
+    clauses.push(`lr.status = $${params.length}`);
+  }
+
+  if (scope.excludeEmployeeId) {
+    params.push(scope.excludeEmployeeId);
+    clauses.push(`lr.employee_id <> $${params.length}`);
+  }
+
   const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
+  const order = scope.order === "asc" ? "ASC" : "DESC";
+  const limit =
+    scope.limit === undefined
+      ? null
+      : Math.min(Math.max(Math.trunc(scope.limit), 1), 100);
+
+  const limitClause = limit === null ? "" : `LIMIT $${params.length + 1}`;
+  const queryParams = limit === null ? params : [...params, limit];
 
   const { rows } = await pool.query<{
     id: string;
@@ -294,8 +316,9 @@ export async function listLeaveRequests(
      JOIN leave_type lt ON lt.id = lr.leave_type_id
      LEFT JOIN employee a ON a.id = lr.approver_id
      ${where}
-     ORDER BY lr.start_date DESC`,
-    params
+     ORDER BY lr.start_date ${order}
+     ${limitClause}`,
+    queryParams
   );
 
   return rows.map((row) => ({

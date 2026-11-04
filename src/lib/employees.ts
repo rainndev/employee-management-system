@@ -25,8 +25,7 @@ export type EmployeeDirectoryItem = {
   hireDate: string;
 };
 
-export type EmployeeTableItem = EmployeeDirectoryItem &
-  Partial<EmployeeDetail>;
+export type EmployeeTableItem = EmployeeDirectoryItem & Partial<EmployeeDetail>;
 
 export type EmployeeDetail = {
   id: string;
@@ -126,7 +125,7 @@ async function deactivateUser(client: PoolClient, userId: string) {
     // Lock active admins so two concurrent offboardings cannot both remove the
     // final admin. The second transaction will see the first one's update.
     const { rows: admins } = await client.query(
-      'SELECT id FROM "user" WHERE role = \'admin\' AND is_active FOR UPDATE'
+      "SELECT id FROM \"user\" WHERE role = 'admin' AND is_active FOR UPDATE"
     );
 
     if (admins.length <= 1) {
@@ -292,7 +291,9 @@ export async function listEmployees(): Promise<EmployeeListItem[]> {
   }));
 }
 
-export async function listEmployeeDirectory(): Promise<EmployeeDirectoryItem[]> {
+export async function listEmployeeDirectory(
+  managerEmployeeId?: string
+): Promise<EmployeeDirectoryItem[]> {
   const { rows } = await pool.query<{
     id: string;
     employee_no: string;
@@ -315,7 +316,9 @@ export async function listEmployeeDirectory(): Promise<EmployeeDirectoryItem[]> 
      LEFT JOIN department d ON d.id = e.department_id
      LEFT JOIN position p ON p.id = e.position_id
      WHERE e.deleted_at IS NULL
-     ORDER BY e.last_name ASC, e.first_name ASC`
+       AND ($1::uuid IS NULL OR e.manager_id = $1)
+     ORDER BY e.last_name ASC, e.first_name ASC`,
+    [managerEmployeeId ?? null]
   );
 
   return rows.map((row) => ({
@@ -667,8 +670,8 @@ export async function updateEmployee(
     if (!isWorkingEmployeeStatus(updated.status)) {
       const userIds = [
         ...new Set(
-          [previousUserId, updated.user_id].filter(
-            (value): value is string => Boolean(value)
+          [previousUserId, updated.user_id].filter((value): value is string =>
+            Boolean(value)
           )
         ),
       ];

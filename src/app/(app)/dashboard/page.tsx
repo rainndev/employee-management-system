@@ -6,13 +6,14 @@ import { getCurrentUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import { getDashboardStats } from "@/lib/analytics";
 import { getSignupSeries } from "@/lib/admin";
-import { listEmployees } from "@/lib/employees";
+import { listEmployeeDirectory } from "@/lib/employees";
 import { getMyEmployeeId, listLeaveRequests } from "@/lib/leave";
 import { SignupsChart } from "@/components/signups-chart";
 import { SectionCards } from "@/components/section-cards";
 import { MyLeaveTable } from "@/components/my-leave-table";
 import { EmptyLeaveToast } from "@/components/empty-leave-toast";
 import { EmployeesTableCard } from "@/components/employees-table-card";
+import { PendingLeaveTable } from "@/components/pending-leave-table";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -45,15 +46,48 @@ async function DashboardContent() {
       ? await getSignupSeries(90)
       : null;
 
-  const employees = user.role === "admin" ? await listEmployees() : null;
+  const manage = canManage(user.role);
+  const isManager = user.role === "manager";
+  const myEmployeeId = await getMyEmployeeId(user.id);
+
+  // Directory table: all employees for admin/HR, direct reports for a manager.
+  const employees =
+    manage || (isManager && myEmployeeId)
+      ? await listEmployeeDirectory(
+          isManager ? (myEmployeeId ?? undefined) : undefined
+        )
+      : null;
+
+  // Approver table: all pending requests for admin/HR, team-only for managers.
+  let pending: Awaited<ReturnType<typeof listLeaveRequests>> | null = null;
+
+  if (canApprove(user.role)) {
+    pending = isManager
+      ? myEmployeeId
+        ? await listLeaveRequests({
+            managerEmployeeId: myEmployeeId,
+            excludeEmployeeId: myEmployeeId,
+            status: "pending",
+            limit: 5,
+            order: "asc",
+          })
+        : []
+      : await listLeaveRequests({
+          excludeEmployeeId: myEmployeeId ?? undefined,
+          status: "pending",
+          limit: 5,
+          order: "asc",
+        });
+  }
 
   let myLeave: Awaited<ReturnType<typeof listLeaveRequests>> | null = null;
   let myLeaveLinked = false;
 
   if (user.role === "employee") {
-    const employeeId = await getMyEmployeeId(user.id);
-    myLeaveLinked = employeeId !== null;
-    myLeave = employeeId ? await listLeaveRequests({ employeeId }) : [];
+    myLeaveLinked = myEmployeeId !== null;
+    myLeave = myEmployeeId
+      ? await listLeaveRequests({ employeeId: myEmployeeId })
+      : [];
   }
 
   const links: { href: string; label: string; hint: string }[] = [
@@ -90,7 +124,21 @@ async function DashboardContent() {
 
         {employees !== null && (
           <div className="px-4 lg:px-6">
-            <EmployeesTableCard employees={employees} />
+            <EmployeesTableCard
+              employees={employees}
+              title={isManager ? "Team members" : "Employees"}
+              description={
+                isManager
+                  ? "Employees who report directly to you."
+                  : "Your employee directory."
+              }
+            />
+          </div>
+        )}
+
+        {pending !== null && (
+          <div className="px-4 lg:px-6">
+            <PendingLeaveTable requests={pending} />
           </div>
         )}
 
