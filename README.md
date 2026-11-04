@@ -67,7 +67,7 @@ pnpm dev
 
 Open http://localhost:3000, then create an account at `/signup` and sign in at `/login`.
 
-Load the reference data (leave types) once:
+Load the reference data (leave types, sample departments, and sample positions) once:
 
 ```bash
 psql "$DATABASE_URL" -f db/seed.sql

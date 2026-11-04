@@ -107,6 +107,7 @@ export function DepartmentForm({
               id={descriptionId}
               name="description"
               defaultValue={department?.description ?? ""}
+              placeholder="e.g. Keeps day-to-day business processes running smoothly across teams and locations."
               aria-invalid={Boolean(visibleState?.errors?.description)}
             />
             <FieldError messages={visibleState?.errors?.description} />

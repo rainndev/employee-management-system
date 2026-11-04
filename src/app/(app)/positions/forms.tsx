@@ -105,6 +105,7 @@ export function PositionForm({
               id={descriptionId}
               name="description"
               defaultValue={position?.description ?? ""}
+              placeholder="e.g. Builds and maintains product features, tests, and production systems."
               aria-invalid={Boolean(visibleState?.errors?.description)}
             />
             <FieldError messages={visibleState?.errors?.description} />
