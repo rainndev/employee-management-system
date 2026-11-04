@@ -29,6 +29,8 @@ export function DatePicker({
   name,
   id,
   defaultValue,
+  value: controlledValue,
+  onValueChange,
   placeholder = "Pick a date",
   clearable = false,
   invalid = false,
@@ -36,14 +38,25 @@ export function DatePicker({
   name: string;
   id?: string;
   defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string | undefined) => void;
   placeholder?: string;
   clearable?: boolean;
   invalid?: boolean;
 }) {
-  const [date, setDate] = useState<Date | undefined>(() =>
+  const [internalDate, setInternalDate] = useState<Date | undefined>(() =>
     parseISODate(defaultValue)
   );
+  const isControlled = controlledValue !== undefined;
+  const date = isControlled ? parseISODate(controlledValue) : internalDate;
   const [open, setOpen] = useState(false);
+
+  function setDate(next: Date | undefined) {
+    if (!isControlled) {
+      setInternalDate(next);
+    }
+    onValueChange?.(next ? format(next, "yyyy-MM-dd") : undefined);
+  }
 
   return (
     <>

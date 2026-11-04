@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Option } from "@/lib/employees";
 import type { LeaveType } from "@/lib/leave";
@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownSelect } from "@/components/dropdown-select";
 import { DatePicker } from "@/components/date-picker";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
+import { countLeaveDays } from "@/lib/leave-days";
 
 function Field({
   label,
@@ -76,6 +77,13 @@ export function LeaveRequestForm({
   );
   const uid = useId();
   const fieldId = (name: string) => `${uid}-${name}`;
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const days = useMemo(
+    () => countLeaveDays(startDate, endDate),
+    [startDate, endDate]
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -139,6 +147,8 @@ export function LeaveRequestForm({
               <DatePicker
                 id={fieldId("startDate")}
                 name="startDate"
+                value={startDate}
+                onValueChange={(value) => setStartDate(value ?? "")}
                 placeholder="Pick a date"
                 invalid={Boolean(state?.errors?.startDate)}
               />
@@ -152,6 +162,8 @@ export function LeaveRequestForm({
               <DatePicker
                 id={fieldId("endDate")}
                 name="endDate"
+                value={endDate}
+                onValueChange={(value) => setEndDate(value ?? "")}
                 placeholder="Pick a date"
                 invalid={Boolean(state?.errors?.endDate)}
               />
@@ -166,9 +178,10 @@ export function LeaveRequestForm({
                 id={fieldId("days")}
                 name="days"
                 type="number"
-                min="0.5"
-                step="0.5"
-                defaultValue="1"
+                value={days > 0 ? days : ""}
+                placeholder="—"
+                readOnly
+                aria-readonly
                 aria-invalid={Boolean(state?.errors?.days)}
               />
             </Field>

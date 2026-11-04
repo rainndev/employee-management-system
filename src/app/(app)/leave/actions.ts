@@ -12,6 +12,7 @@ import {
   setLeaveStatus,
 } from "@/lib/leave";
 import { LeaveRequestSchema, type ActionState } from "@/lib/definitions";
+import { countLeaveDays } from "@/lib/leave-days";
 
 export async function createLeaveRequestAction(
   _state: ActionState,
@@ -36,12 +37,16 @@ export async function createLeaveRequestAction(
     employeeId = mine;
   }
 
+  const startDate = String(formData.get("startDate") ?? "");
+  const endDate = String(formData.get("endDate") ?? "");
+
+  // Days are derived from the selected range; never trust a posted count.
   const parsed = LeaveRequestSchema.safeParse({
     employeeId,
     leaveTypeId: formData.get("leaveTypeId"),
-    startDate: formData.get("startDate"),
-    endDate: formData.get("endDate"),
-    days: formData.get("days"),
+    startDate,
+    endDate,
+    days: countLeaveDays(startDate, endDate),
     reason: formData.get("reason") ?? "",
   });
 
