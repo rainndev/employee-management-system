@@ -1,7 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
-import { EllipsisVerticalIcon, KeyRoundIcon, LogOutIcon } from "lucide-react";
+import {
+  EllipsisVerticalIcon,
+  KeyRoundIcon,
+  LogOutIcon,
+  UserRoundIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -79,6 +84,13 @@ export function NavUser({
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator />
+
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserRoundIcon />
+                Profile
+              </Link>
+            </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link href="/account">

@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   "/leave": "Leave requests",
   "/admin": "Admin",
   "/account": "Account",
+  "/profile": "Profile",
 };
 
 export function SiteHeader() {

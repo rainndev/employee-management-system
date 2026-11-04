@@ -28,7 +28,7 @@ export const PasswordSchema = z
 
 // Normalise before validating so "  User@Example.com " becomes
 // "user@example.com" and duplicate accounts cannot differ only by case.
-const EmailSchema = z
+export const EmailSchema = z
   .string()
   .trim()
   .toLowerCase()
@@ -84,6 +84,23 @@ export type AccountPasswordState =
     }
   | undefined;
 
+export type ProfileState =
+  | {
+      errors?: {
+        email?: string[];
+        currentPassword?: string[];
+        firstName?: string[];
+        lastName?: string[];
+        phone?: string[];
+        address?: string[];
+        birthdate?: string[];
+        gender?: string[];
+      };
+      message?: string;
+      success?: boolean;
+    }
+  | undefined;
+
 const UUID_PATTERN =
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
@@ -109,6 +126,38 @@ const optionalUuid = z
   });
 
 const todayISO = todayInCompanyTimeZone();
+
+export const AccountProfileSchema = z.object({
+  email: EmailSchema,
+  currentPassword: z.string().optional(),
+});
+
+export const ProfileEmployeeSchema = z
+  .object({
+    firstName: z
+      .string()
+      .trim()
+      .min(1, { error: "First name is required." })
+      .max(100, { error: "Keep it under 100 characters." }),
+    lastName: z
+      .string()
+      .trim()
+      .min(1, { error: "Last name is required." })
+      .max(100, { error: "Keep it under 100 characters." }),
+    phone: z.string().trim().max(30, { error: "Keep it under 30 characters." }),
+    address: z
+      .string()
+      .trim()
+      .max(500, { error: "Keep it under 500 characters." }),
+    birthdate: optionalDate,
+    gender: z.enum(["", "male", "female", "other"], {
+      error: "Choose a gender.",
+    }),
+  })
+  .refine((value) => !value.birthdate || value.birthdate <= todayISO, {
+    error: "Birthdate cannot be in the future.",
+    path: ["birthdate"],
+  });
 
 export const DepartmentSchema = z.object({
   name: z

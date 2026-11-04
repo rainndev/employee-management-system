@@ -157,6 +157,10 @@ Every clause in the rubric is used in application code:
 
 An admin cannot edit their own row. Everyone can change their own password from **Account → Change password**, which signs out other sessions. Share a reset password with the user directly — there is no email delivery.
 
+### Self-service profile
+
+Every signed-in user has a **Profile** page at `/profile`, linked from the user menu above **Change password**. Users can edit their sign-in email plus their own employee contact details (first/last name, phone, address, birthdate, and gender). Employment fields — employee number, department, position, manager, hire date, and status — remain read-only. Changing the sign-in email requires the current password. Accounts without a linked employee record can still update their email and are prompted to ask an administrator for a link.
+
 Role changes and deactivations take effect on the target user's very next request, because `getCurrentUser()` re-reads `role` and `is_active` from the database instead of trusting the cookie. Password changes and admin resets bump `session_version`, so older cookies are rejected immediately.
 
 ### Promoting the first admin
@@ -198,6 +202,8 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | `src/app/(app)/*/actions.ts`  | Per-module create/update/delete Server Actions                                                       |
 | `src/app/(app)/admin/`        | Admin dashboard (roles, account status, password reset)                                              |
 | `src/app/(app)/account/`      | Self-service password change                                                                         |
+| `src/app/(app)/profile/`      | Self-service profile and contact details                                                             |
+| `src/lib/profile.ts`          | Profile queries and self-service update transaction                                                 |
 
 ## Scripts
 

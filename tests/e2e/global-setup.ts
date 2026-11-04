@@ -147,6 +147,12 @@ async function seedFixtures(client: Client) {
     "employee",
     passwordHash
   );
+  const profileUserId = await insertUser(
+    client,
+    "profile@e2e.test",
+    "employee",
+    passwordHash
+  );
   const piiUserId = await insertUser(
     client,
     "pii@e2e.test",
@@ -291,6 +297,16 @@ async function seedFixtures(client: Client) {
     firstName: "Dashboard",
     lastName: "Pending",
     userId: dashboardUserId,
+    managerId,
+    departmentId,
+    positionId,
+  });
+
+  await insertEmployee(client, {
+    employeeNo: "PROF-1000",
+    firstName: "Profile",
+    lastName: "Employee",
+    userId: profileUserId,
     managerId,
     departmentId,
     positionId,

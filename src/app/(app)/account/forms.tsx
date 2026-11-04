@@ -1,58 +1,13 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { useActionState, useId } from "react";
 import { toast } from "sonner";
 import type { AccountPasswordState } from "@/lib/definitions";
 import { changePassword } from "./actions";
 import { Button } from "@/components/ui/button";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
-
-function PasswordInput({
-  id,
-  name,
-  label,
-  autoComplete,
-  invalid,
-}: {
-  id: string;
-  name: string;
-  label: string;
-  autoComplete: string;
-  invalid: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <InputGroup className="h-10 w-full">
-      <InputGroupInput
-        id={id}
-        name={name}
-        type={visible ? "text" : "password"}
-        autoComplete={autoComplete}
-        aria-invalid={invalid}
-      />
-      <InputGroupAddon align="inline-end">
-        <InputGroupButton
-          size="icon-sm"
-          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
-          aria-pressed={visible}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => setVisible((current) => !current)}
-        >
-          {visible ? <EyeOffIcon /> : <EyeIcon />}
-        </InputGroupButton>
-      </InputGroupAddon>
-    </InputGroup>
-  );
-}
+import { PasswordInput } from "@/components/password-input";
 
 function Field({
   label,
