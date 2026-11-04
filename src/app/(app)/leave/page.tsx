@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import {
+  getLeaveBalances,
   getMyEmployeeId,
   listLeaveRequests,
   listLeaveTypes,
@@ -10,6 +11,7 @@ import {
 import { listEmployeeOptions } from "@/lib/employees";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LeaveBalanceChart } from "@/components/leave-balance-chart";
 import { LeaveRequestForm } from "./forms";
 import { LeaveTable } from "./leave-table";
 
@@ -35,8 +37,9 @@ async function Content() {
   const manage = canManage(user.role);
 
   const myEmployeeId = await getMyEmployeeId(user.id);
+  const currentYear = new Date().getFullYear();
 
-  const [leaveTypes, requests, employees] = await Promise.all([
+  const [leaveTypes, requests, employees, balances] = await Promise.all([
     listLeaveTypes(),
     approveAll
       ? listLeaveRequests()
@@ -44,6 +47,9 @@ async function Content() {
         ? listLeaveRequests(myEmployeeId)
         : Promise.resolve([]),
     manage ? listEmployeeOptions() : Promise.resolve([]),
+    myEmployeeId
+      ? getLeaveBalances(myEmployeeId, currentYear)
+      : Promise.resolve([]),
   ]);
 
   const canFileOwn = manage || myEmployeeId !== null;
@@ -89,6 +95,10 @@ async function Content() {
             file a leave request. Ask HR to link your account.
           </AlertDescription>
         </Alert>
+      )}
+
+      {myEmployeeId && balances.length > 0 && (
+        <LeaveBalanceChart data={balances} year={currentYear} />
       )}
 
       <div className="overflow-hidden rounded-xl border p-4">

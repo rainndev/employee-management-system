@@ -10,6 +10,7 @@ import {
   getLeaveRequest,
   getMyEmployeeId,
   hasOverlappingLeaveRequest,
+  InsufficientLeaveBalanceError,
   setLeaveStatus,
 } from "@/lib/leave";
 import { LeaveRequestSchema, type ActionState } from "@/lib/definitions";
@@ -74,6 +75,10 @@ export async function createLeaveRequestAction(
       reason: parsed.data.reason || null,
     });
   } catch (error) {
+    if (error instanceof InsufficientLeaveBalanceError) {
+      return { message: error.message };
+    }
+
     // 23P01 = exclusion_violation from leave_request_no_overlap.
     if ((error as { code?: string }).code === "23P01") {
       return { errors: { startDate: [overlapMessage] } };
@@ -87,35 +92,51 @@ export async function createLeaveRequestAction(
   return { success: true };
 }
 
+export type LeaveActionResult = { success: boolean; message?: string };
+
 export async function decideLeave(
   id: string,
   decision: "approved" | "rejected"
-) {
+): Promise<LeaveActionResult> {
   const user = await requireRole("admin", "hr", "manager");
 
   if (!id) {
-    return;
+    return { success: false, message: "Missing leave request." };
   }
 
   const approverId = await getMyEmployeeId(user.id);
   if (!approverId) {
-    return;
+    return {
+      success: false,
+      message: "Your account is not linked to an employee record.",
+    };
   }
 
-  await setLeaveStatus(id, decision, approverId);
+  try {
+    await setLeaveStatus(id, decision, approverId);
+  } catch (error) {
+    if (error instanceof InsufficientLeaveBalanceError) {
+      return { success: false, message: error.message };
+    }
+
+    console.error("setLeaveStatus failed:", error);
+    return { success: false, message: "Could not update the request." };
+  }
+
   refresh();
+  return { success: true };
 }
 
-export async function deleteLeave(id: string) {
+export async function deleteLeave(id: string): Promise<LeaveActionResult> {
   const user = await requireUser();
 
   if (!id) {
-    return;
+    return { success: false, message: "Missing leave request." };
   }
 
   const request = await getLeaveRequest(id);
   if (!request) {
-    return;
+    return { success: false, message: "Leave request not found." };
   }
 
   const myEmployeeId = await getMyEmployeeId(user.id);
@@ -124,9 +145,16 @@ export async function deleteLeave(id: string) {
     canManage(user.role) || (isOwner && request.status === "pending");
 
   if (!allowed) {
-    return;
+    return { success: false, message: "You cannot delete this request." };
   }
 
-  await deleteLeaveRequest(id);
+  try {
+    await deleteLeaveRequest(id);
+  } catch (error) {
+    console.error("deleteLeaveRequest failed:", error);
+    return { success: false, message: "Could not delete the request." };
+  }
+
   refresh();
+  return { success: true };
 }

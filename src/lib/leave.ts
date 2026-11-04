@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
 
 export type LeaveType = {
@@ -34,6 +35,71 @@ export type LeaveRequestInput = {
   reason: string | null;
 };
 
+export type LeaveBalanceItem = {
+  leaveTypeId: string;
+  leaveType: string;
+  isPaid: boolean;
+  allocated: number;
+  used: number;
+  pending: number;
+  // null for uncapped (unpaid) types.
+  available: number | null;
+};
+
+export class InsufficientLeaveBalanceError extends Error {
+  constructor(
+    public readonly leaveType: string,
+    public readonly available: number,
+    public readonly requested: number
+  ) {
+    super(
+      `Only ${formatDays(available)} ${leaveType} ${
+        available === 1 ? "day" : "days"
+      } left, but ${formatDays(requested)} requested.`
+    );
+    this.name = "InsufficientLeaveBalanceError";
+  }
+}
+
+function formatDays(value: number) {
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+async function withTransaction<T>(
+  fn: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Create the per-employee/type/year rows the first time they are needed.
+export async function ensureLeaveBalances(
+  client: PoolClient,
+  employeeId: string,
+  year: number
+) {
+  await client.query(
+    `INSERT INTO leave_balance (employee_id, leave_type_id, year, allocated)
+     SELECT $1, lt.id, $2, lt.default_days
+     FROM leave_type lt
+     ON CONFLICT (employee_id, leave_type_id, year) DO NOTHING`,
+    [employeeId, year]
+  );
+}
+
 export async function listLeaveTypes(): Promise<LeaveType[]> {
   const { rows } = await pool.query<{
     id: string;
@@ -52,6 +118,62 @@ export async function listLeaveTypes(): Promise<LeaveType[]> {
     defaultDays: row.default_days,
     isPaid: row.is_paid,
   }));
+}
+
+export async function getLeaveBalances(
+  employeeId: string,
+  year = new Date().getFullYear()
+): Promise<LeaveBalanceItem[]> {
+  await pool.query(
+    `INSERT INTO leave_balance (employee_id, leave_type_id, year, allocated)
+     SELECT $1, lt.id, $2, lt.default_days
+     FROM leave_type lt
+     ON CONFLICT (employee_id, leave_type_id, year) DO NOTHING`,
+    [employeeId, year]
+  );
+
+  const { rows } = await pool.query<{
+    id: string;
+    name: string;
+    is_paid: boolean;
+    allocated: number;
+    used: number;
+    pending: number;
+  }>(
+    `SELECT lt.id,
+            lt.name,
+            lt.is_paid,
+            lb.allocated::float8 AS allocated,
+            lb.used::float8 AS used,
+            coalesce(p.pending, 0)::float8 AS pending
+     FROM leave_balance lb
+     JOIN leave_type lt ON lt.id = lb.leave_type_id
+     LEFT JOIN (
+       SELECT leave_type_id, sum(days) AS pending
+       FROM leave_request
+       WHERE employee_id = $1
+         AND status = 'pending'
+         AND EXTRACT(YEAR FROM start_date)::int = $2
+       GROUP BY leave_type_id
+     ) p ON p.leave_type_id = lb.leave_type_id
+     WHERE lb.employee_id = $1 AND lb.year = $2
+     ORDER BY lt.name ASC`,
+    [employeeId, year]
+  );
+
+  return rows.map((row) => {
+    const remaining = row.allocated - row.used - row.pending;
+
+    return {
+      leaveTypeId: row.id,
+      leaveType: row.name,
+      isPaid: row.is_paid,
+      allocated: row.allocated,
+      used: row.used,
+      pending: row.pending,
+      available: row.is_paid ? Math.max(remaining, 0) : null,
+    };
+  });
 }
 
 // JOINs employee, leave_type and the approving employee.
@@ -150,19 +272,71 @@ export async function hasOverlappingLeaveRequest(
 }
 
 export async function createLeaveRequest(input: LeaveRequestInput) {
-  await pool.query(
-    `INSERT INTO leave_request
-       (employee_id, leave_type_id, start_date, end_date, days, reason, status)
-     VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
-    [
-      input.employeeId,
-      input.leaveTypeId,
-      input.startDate,
-      input.endDate,
-      input.days,
-      input.reason,
-    ]
-  );
+  const year = Number(input.startDate.slice(0, 4));
+
+  await withTransaction(async (client) => {
+    await ensureLeaveBalances(client, input.employeeId, year);
+
+    // Lock the balance row so concurrent requests for this employee/type/year
+    // cannot both read the same remaining days.
+    const { rows } = await client.query<{
+      allocated: number;
+      used: number;
+      leave_type: string;
+      is_paid: boolean;
+    }>(
+      `SELECT lb.allocated::float8 AS allocated,
+              lb.used::float8 AS used,
+              lt.name AS leave_type,
+              lt.is_paid
+       FROM leave_balance lb
+       JOIN leave_type lt ON lt.id = lb.leave_type_id
+       WHERE lb.employee_id = $1
+         AND lb.leave_type_id = $2
+         AND lb.year = $3
+       FOR UPDATE OF lb`,
+      [input.employeeId, input.leaveTypeId, year]
+    );
+
+    const balance = rows[0];
+
+    if (balance?.is_paid) {
+      const { rows: pendingRows } = await client.query<{ pending: number }>(
+        `SELECT coalesce(sum(days), 0)::float8 AS pending
+         FROM leave_request
+         WHERE employee_id = $1
+           AND leave_type_id = $2
+           AND status = 'pending'
+           AND EXTRACT(YEAR FROM start_date)::int = $3`,
+        [input.employeeId, input.leaveTypeId, year]
+      );
+
+      const available =
+        balance.allocated - balance.used - pendingRows[0].pending;
+
+      if (input.days > available) {
+        throw new InsufficientLeaveBalanceError(
+          balance.leave_type,
+          Math.max(available, 0),
+          input.days
+        );
+      }
+    }
+
+    await client.query(
+      `INSERT INTO leave_request
+         (employee_id, leave_type_id, start_date, end_date, days, reason, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+      [
+        input.employeeId,
+        input.leaveTypeId,
+        input.startDate,
+        input.endDate,
+        input.days,
+        input.reason,
+      ]
+    );
+  });
 }
 
 export async function getLeaveRequest(id: string) {
@@ -185,14 +359,122 @@ export async function setLeaveStatus(
   status: "approved" | "rejected",
   approverId: string
 ) {
-  await pool.query(
-    `UPDATE leave_request
-     SET status = $1, approver_id = $2, decided_at = now()
-     WHERE id = $3 AND status = 'pending'`,
-    [status, approverId, id]
-  );
+  await withTransaction(async (client) => {
+    const { rows } = await client.query<{
+      id: string;
+      employee_id: string;
+      leave_type_id: string;
+      days: number;
+      year: number;
+      status: string;
+      leave_type: string;
+      is_paid: boolean;
+    }>(
+      `SELECT lr.id,
+              lr.employee_id,
+              lr.leave_type_id,
+              lr.days::float8 AS days,
+              EXTRACT(YEAR FROM lr.start_date)::int AS year,
+              lr.status,
+              lt.name AS leave_type,
+              lt.is_paid
+       FROM leave_request lr
+       JOIN leave_type lt ON lt.id = lr.leave_type_id
+       WHERE lr.id = $1
+       FOR UPDATE OF lr`,
+      [id]
+    );
+
+    const request = rows[0];
+
+    if (!request || request.status !== "pending") {
+      return;
+    }
+
+    if (status === "approved") {
+      await ensureLeaveBalances(client, request.employee_id, request.year);
+
+      const { rows: balanceRows } = await client.query<{
+        allocated: number;
+        used: number;
+      }>(
+        `SELECT allocated::float8 AS allocated, used::float8 AS used
+         FROM leave_balance
+         WHERE employee_id = $1 AND leave_type_id = $2 AND year = $3
+         FOR UPDATE`,
+        [request.employee_id, request.leave_type_id, request.year]
+      );
+
+      const balance = balanceRows[0];
+
+      if (balance) {
+        if (request.is_paid) {
+          const available = balance.allocated - balance.used;
+          if (request.days > available) {
+            throw new InsufficientLeaveBalanceError(
+              request.leave_type,
+              Math.max(available, 0),
+              request.days
+            );
+          }
+        }
+
+        await client.query(
+          `UPDATE leave_balance
+           SET used = used + $1
+           WHERE employee_id = $2 AND leave_type_id = $3 AND year = $4`,
+          [request.days, request.employee_id, request.leave_type_id, request.year]
+        );
+      }
+    }
+
+    await client.query(
+      `UPDATE leave_request
+       SET status = $1, approver_id = $2, decided_at = now()
+       WHERE id = $3 AND status = 'pending'`,
+      [status, approverId, id]
+    );
+  });
 }
 
 export async function deleteLeaveRequest(id: string) {
-  await pool.query("DELETE FROM leave_request WHERE id = $1", [id]);
+  await withTransaction(async (client) => {
+    const { rows } = await client.query<{
+      employee_id: string;
+      leave_type_id: string;
+      days: number;
+      year: number;
+      status: string;
+    }>(
+      `SELECT employee_id,
+              leave_type_id,
+              days::float8 AS days,
+              EXTRACT(YEAR FROM start_date)::int AS year,
+              status
+       FROM leave_request
+       WHERE id = $1
+       FOR UPDATE`,
+      [id]
+    );
+
+    const request = rows[0];
+
+    if (!request) {
+      return;
+    }
+
+    // Approved days were counted against the balance; deleting them restores
+    // the allowance. Pending days were only reserved and never added to used.
+    if (request.status === "approved") {
+      await ensureLeaveBalances(client, request.employee_id, request.year);
+      await client.query(
+        `UPDATE leave_balance
+         SET used = GREATEST(used - $1, 0)
+         WHERE employee_id = $2 AND leave_type_id = $3 AND year = $4`,
+        [request.days, request.employee_id, request.leave_type_id, request.year]
+      );
+    }
+
+    await client.query("DELETE FROM leave_request WHERE id = $1", [id]);
+  });
 }

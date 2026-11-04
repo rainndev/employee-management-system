@@ -37,7 +37,11 @@ import { Separator } from "@/components/ui/separator";
 import { DateRange } from "@/components/date-range";
 import { StatusBadge } from "@/components/status-badge";
 import { cn } from "@/lib/utils";
-import { decideLeave, deleteLeave } from "./actions";
+import {
+  decideLeave,
+  deleteLeave,
+  type LeaveActionResult,
+} from "./actions";
 
 function DetailItem({
   icon,
@@ -82,10 +86,20 @@ export function LeaveDetailsDialog({
   const [pending, startTransition] = useTransition();
   const showDecision = canDecide && request.status === "pending";
 
-  function run(action: () => Promise<void>, success: string, error: string) {
+  function run(
+    action: () => Promise<LeaveActionResult>,
+    success: string,
+    error: string
+  ) {
     startTransition(async () => {
       try {
-        await action();
+        const result = await action();
+
+        if (!result.success) {
+          toast.error(result.message ?? error);
+          return;
+        }
+
         toast.success(success);
         setOpen(false);
       } catch {
