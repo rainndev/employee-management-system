@@ -298,11 +298,7 @@ export function LeaveTypesManager({
       </Card>
 
       {formOpen && (
-        <LeaveTypeForm
-          leaveType={editing}
-          open
-          onOpenChange={setFormOpen}
-        />
+        <LeaveTypeForm leaveType={editing} open onOpenChange={setFormOpen} />
       )}
 
       <ConfirmDialog

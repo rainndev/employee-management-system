@@ -91,6 +91,7 @@ Or paste `db/seed.sql` into pgAdmin's Query Tool and press **F5**.
 | Leave — approve/reject | ✅ | ✅ | own direct reports | — |
 | Leave — cancel | any pending/approved | any pending/approved | own pending | own pending |
 | Admin (users, roles, resets) | ✅ | — | — | — |
+| Leave types (create/edit/delete) | ✅ | — | — | — |
 
 Permissions are enforced in `src/lib/dal.ts` (`requireRole`) and re-checked inside **every** Server Action — the UI hides links, but the server is the security boundary. Nobody can approve their own leave request; managers are restricted to their direct reports.
 
@@ -154,6 +155,7 @@ Every clause in the rubric is used in application code:
 - change a user's role
 - enable or disable an account
 - **set a new password for a user** (bcrypt-hashed, same rules as signup: 8 to 72 characters with a letter and a number); this signs out the user's existing sessions
+- **manage leave types** — create custom types, edit the name/default allowance/paid flag, and soft-delete them; existing requests and history are preserved
 
 An admin cannot edit their own row. Everyone can change their own password from **Account → Change password**, which signs out other sessions. Share a reset password with the user directly — there is no email delivery.
 
@@ -188,6 +190,8 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | `src/lib/positions.ts`        | Position queries                                                                                     |
 | `src/lib/employees.ts`        | Employee queries with JOINs, options, soft delete                                                    |
 | `src/lib/leave.ts`            | Leave types, balances, requests, overlap and approval rules                                          |
+| `src/lib/leave-types.ts`      | Admin leave type management queries and mutations                                                    |
+| `src/app/(app)/admin/leave-types-manager.tsx` | Admin leave type table and create/edit/delete dialogs                                 |
 | `src/lib/admin.ts`            | Admin stats and user list queries                                                                    |
 | `src/lib/definitions.ts`      | Zod schemas and form state types                                                                     |
 | `src/lib/env.ts`              | Fail-fast environment validation                                                                     |

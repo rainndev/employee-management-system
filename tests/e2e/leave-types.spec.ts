@@ -49,9 +49,7 @@ test("admin can edit and delete a custom leave type", async ({ page }) => {
   ).toBeVisible();
 
   const updatedRow = page.getByRole("row", { name: /Bereavement Leave/ });
-  await updatedRow
-    .getByRole("button", { name: "Leave type actions" })
-    .click();
+  await updatedRow.getByRole("button", { name: "Leave type actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete leave type" }).click();
 
