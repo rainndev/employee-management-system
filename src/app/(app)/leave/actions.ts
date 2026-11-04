@@ -9,6 +9,7 @@ import {
   deleteLeaveRequest,
   getLeaveRequest,
   getMyEmployeeId,
+  hasOverlappingLeaveRequest,
   setLeaveStatus,
 } from "@/lib/leave";
 import { LeaveRequestSchema, type ActionState } from "@/lib/definitions";
@@ -54,12 +55,30 @@ export async function createLeaveRequestAction(
     return { errors: z.flattenError(parsed.error).fieldErrors };
   }
 
+  const overlapMessage =
+    "This employee already has a pending or approved leave request that overlaps those dates.";
+
+  if (
+    await hasOverlappingLeaveRequest(
+      parsed.data.employeeId,
+      parsed.data.startDate,
+      parsed.data.endDate
+    )
+  ) {
+    return { errors: { startDate: [overlapMessage] } };
+  }
+
   try {
     await createLeaveRequest({
       ...parsed.data,
       reason: parsed.data.reason || null,
     });
   } catch (error) {
+    // 23P01 = exclusion_violation from leave_request_no_overlap.
+    if ((error as { code?: string }).code === "23P01") {
+      return { errors: { startDate: [overlapMessage] } };
+    }
+
     console.error("createLeaveRequest failed:", error);
     return { message: "Could not submit the leave request." };
   }

@@ -15,6 +15,9 @@
 
 BEGIN;
 
+-- Needed for the leave_request_no_overlap exclusion constraint (uuid = in gist).
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 -- ----------------------------------------------------------------------------
 -- DROP (optional, reverse dependency order). Uncomment to reset the database.
 -- ----------------------------------------------------------------------------
@@ -158,7 +161,13 @@ CREATE TABLE IF NOT EXISTS leave_request (
     CONSTRAINT leave_request_status_check
         CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
     CONSTRAINT leave_request_dates_check CHECK (end_date >= start_date),
-    CONSTRAINT leave_request_days_check CHECK (days > 0)
+    CONSTRAINT leave_request_days_check CHECK (days > 0),
+    -- One employee cannot hold two pending/approved requests over the same day.
+    CONSTRAINT leave_request_no_overlap
+        EXCLUDE USING gist (
+            employee_id WITH =,
+            daterange(start_date, end_date, '[]') WITH &&
+        ) WHERE (status IN ('pending', 'approved'))
 );
 
 -- ----------------------------------------------------------------------------

@@ -126,6 +126,29 @@ export async function getMyEmployeeId(userId: string): Promise<string | null> {
   return rows[0]?.id ?? null;
 }
 
+// Pending and approved requests hold the dates; rejected/cancelled ones do not.
+export async function hasOverlappingLeaveRequest(
+  employeeId: string,
+  startDate: string,
+  endDate: string,
+  excludeId?: string
+): Promise<boolean> {
+  const { rows } = await pool.query<{ overlaps: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1
+       FROM leave_request
+       WHERE employee_id = $1
+         AND status IN ('pending', 'approved')
+         AND start_date <= $3::date
+         AND end_date >= $2::date
+         AND ($4::uuid IS NULL OR id <> $4::uuid)
+     ) AS overlaps`,
+    [employeeId, startDate, endDate, excludeId ?? null]
+  );
+
+  return rows[0]?.overlaps ?? false;
+}
+
 export async function createLeaveRequest(input: LeaveRequestInput) {
   await pool.query(
     `INSERT INTO leave_request
