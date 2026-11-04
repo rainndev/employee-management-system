@@ -115,6 +115,7 @@ async function Content() {
           manage={manage}
           myEmployeeId={myEmployeeId}
           leaveTypes={leaveTypes.map((type) => type.name)}
+          today={today}
         />
       </div>
     </div>

@@ -192,6 +192,7 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 pnpm dev          # development server
 pnpm build        # production build
 pnpm test         # validation unit tests
+pnpm test:e2e     # Playwright E2E (builds, then uses an isolated test database)
 pnpm start        # run the production build
 pnpm lint         # ESLint
 pnpm format       # Prettier (with Tailwind class sorting)

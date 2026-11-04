@@ -84,16 +84,32 @@ export function LeaveRequestForm({
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const days = useMemo(
+  const [halfDay, setHalfDay] = useState(false);
+  const workingDays = useMemo(
     () => countLeaveDays(startDate, endDate),
     [startDate, endDate]
   );
+  const canHalfDay =
+    startDate !== "" && startDate === endDate && workingDays === 1;
+  const halfDayActive = halfDay && canHalfDay;
+  const days = halfDayActive ? 0.5 : workingDays;
+
+  function changeStartDate(value: string) {
+    setStartDate(value);
+    setHalfDay(false);
+  }
+
+  function changeEndDate(value: string) {
+    setEndDate(value);
+    setHalfDay(false);
+  }
 
   function handleOpenChange(next: boolean) {
     if (next) {
       setVisibleState(undefined);
       setStartDate("");
       setEndDate("");
+      setHalfDay(false);
     }
 
     setOpen(next);
@@ -162,7 +178,7 @@ export function LeaveRequestForm({
                 id={fieldId("startDate")}
                 name="startDate"
                 value={startDate}
-                onValueChange={(value) => setStartDate(value ?? "")}
+                onValueChange={(value) => changeStartDate(value ?? "")}
                 placeholder="Pick a date"
                 invalid={Boolean(visibleState?.errors?.startDate)}
                 minDate={today}
@@ -178,7 +194,7 @@ export function LeaveRequestForm({
                 id={fieldId("endDate")}
                 name="endDate"
                 value={endDate}
-                onValueChange={(value) => setEndDate(value ?? "")}
+                onValueChange={(value) => changeEndDate(value ?? "")}
                 placeholder="Pick a date"
                 invalid={Boolean(visibleState?.errors?.endDate)}
                 minDate={startDate || today}
@@ -202,6 +218,18 @@ export function LeaveRequestForm({
               />
             </Field>
           </div>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="halfDay"
+              checked={halfDayActive}
+              onChange={(event) => setHalfDay(event.target.checked)}
+              disabled={!canHalfDay}
+              className="size-4 accent-primary disabled:opacity-50"
+            />
+            Half day (single working day)
+          </label>
 
           <Field
             label="Reason"

@@ -296,7 +296,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS leave_request_no_past_dates ON leave_request;
 CREATE TRIGGER leave_request_no_past_dates
-    BEFORE INSERT OR UPDATE OF start_date, status ON leave_request
+    BEFORE INSERT OR UPDATE OF start_date ON leave_request
     FOR EACH ROW EXECUTE FUNCTION prevent_past_leave_request();
 
 DROP TRIGGER IF EXISTS set_updated_at ON leave_balance;

@@ -222,10 +222,14 @@ export const LeaveRequestSchema = z
   .refine(
     (value) => leaveSpanDays(value.startDate, value.endDate) >= value.days,
     {
-      error: "Days cannot exceed the selected date range.",
+      error: "Days cannot exceed the selected working-day range.",
       path: ["days"],
     }
-  );
+  )
+  .refine((value) => leaveSpanDays(value.startDate, value.endDate) > 0, {
+    error: "Select at least one working day (Mon-Fri).",
+    path: ["startDate"],
+  });
 
 export const ChangePasswordSchema = z
   .object({
@@ -248,5 +252,19 @@ function leaveSpanDays(startDate: string, endDate: string) {
     return 0;
   }
 
-  return Math.round((end - start) / 86_400_000) + 1;
+  let count = 0;
+
+  for (
+    const day = new Date(start);
+    day.getTime() <= end;
+    day.setUTCDate(day.getUTCDate() + 1)
+  ) {
+    const weekday = day.getUTCDay();
+
+    if (weekday !== 0 && weekday !== 6) {
+      count += 1;
+    }
+  }
+
+  return count;
 }

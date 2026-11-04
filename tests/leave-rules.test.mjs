@@ -13,12 +13,14 @@ const leaveBase = {
   leaveTypeId: "22222222-2222-4222-8222-222222222222",
   startDate: "2099-12-01",
   endDate: "2099-12-22",
-  days: 22,
+  days: 16,
   reason: "",
 };
 
-test("countLeaveDays is inclusive and rejects invalid dates", () => {
-  assert.equal(countLeaveDays("2026-10-01", "2026-10-22"), 22);
+test("countLeaveDays counts Monday-Friday and rejects invalid dates", () => {
+  assert.equal(countLeaveDays("2026-10-01", "2026-10-22"), 16);
+  assert.equal(countLeaveDays("2026-11-06", "2026-11-09"), 2);
+  assert.equal(countLeaveDays("2026-11-07", "2026-11-08"), 0);
   assert.equal(countLeaveDays("2026-10-01", "2026-10-01"), 1);
   assert.equal(countLeaveDays("2026-10-22", "2026-10-01"), 0);
   assert.equal(countLeaveDays("2026-02-31", "2026-03-02"), 0);
@@ -38,6 +40,15 @@ test("leave days are bounded by the range and half-day increments", () => {
       days: 0.5,
     }).success,
     true
+  );
+  assert.equal(
+    LeaveRequestSchema.safeParse({
+      ...leaveBase,
+      startDate: "2099-12-05",
+      endDate: "2099-12-06",
+      days: 1,
+    }).success,
+    false
   );
   assert.equal(
     LeaveRequestSchema.safeParse({ ...leaveBase, days: 1.25 }).success,

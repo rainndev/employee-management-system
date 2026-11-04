@@ -483,7 +483,8 @@ export async function setLeaveStatus(
   status: "approved" | "rejected",
   approverId: string,
   approverRole: Role,
-  actorUserId: string | null
+  actorUserId: string | null,
+  remark: string | null
 ) {
   return withTransaction(async (client) => {
     const { rows } = await client.query<{
@@ -589,9 +590,12 @@ export async function setLeaveStatus(
 
     const { rowCount } = await client.query(
       `UPDATE leave_request
-       SET status = $1, approver_id = $2, decided_at = now()
+       SET status = $1,
+           approver_id = $2,
+           decided_at = now(),
+           remark = $4
        WHERE id = $3 AND status = 'pending'`,
-      [status, approverId, id]
+      [status, approverId, id, remark]
     );
 
     if (!rowCount) {
@@ -603,7 +607,11 @@ export async function setLeaveStatus(
       action: status === "approved" ? "leave.approve" : "leave.reject",
       entity: "leave_request",
       entityId: id,
-      details: { employeeId: request.employee_id, days: request.days },
+      details: {
+        employeeId: request.employee_id,
+        days: request.days,
+        remark,
+      },
     });
   });
 }
@@ -620,12 +628,14 @@ export async function cancelLeaveRequest(
       days: number;
       year: number;
       status: string;
+      started: boolean;
     }>(
       `SELECT employee_id,
               leave_type_id,
               days::float8 AS days,
               EXTRACT(YEAR FROM start_date)::int AS year,
-              status
+              status,
+              (start_date < CURRENT_DATE) AS started
        FROM leave_request
        WHERE id = $1
        FOR UPDATE`,
@@ -640,6 +650,12 @@ export async function cancelLeaveRequest(
 
     if (request.status !== "pending" && request.status !== "approved") {
       throw new LeaveRequestNotCancellableError();
+    }
+
+    if (request.status === "approved" && request.started) {
+      throw new LeaveRequestNotCancellableError(
+        "Approved leave cannot be cancelled after it has started."
+      );
     }
 
     // Approved days were counted against the balance; cancelling them restores

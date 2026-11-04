@@ -3,9 +3,11 @@ import { Suspense } from "react";
 import { requireRole } from "@/lib/dal";
 import { canManage } from "@/lib/roles";
 import {
+  listEmployeeDirectory,
   listEmployees,
   listManagerOptions,
   listUserOptions,
+  type EmployeeTableItem,
 } from "@/lib/employees";
 import { listDepartments } from "@/lib/departments";
 import { listPositions } from "@/lib/positions";
@@ -32,9 +34,11 @@ async function Content() {
   const user = await requireRole("admin", "hr", "manager");
   const manage = canManage(user.role);
 
+  const employeesPromise = manage ? listEmployees() : listEmployeeDirectory();
+
   const [employees, departments, positions, managers, users] =
     await Promise.all([
-      listEmployees(),
+      employeesPromise,
       listDepartments(),
       listPositions(),
       manage ? listManagerOptions() : Promise.resolve([]),
@@ -73,7 +77,7 @@ async function Content() {
 
       <div className="overflow-hidden rounded-xl border p-4">
         <EmployeesTable
-          employees={employees}
+          employees={employees as EmployeeTableItem[]}
           manage={manage}
           departments={departmentOptions}
           positions={positionOptions}

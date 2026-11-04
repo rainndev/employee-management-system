@@ -34,6 +34,8 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { DateRange } from "@/components/date-range";
 import { StatusBadge } from "@/components/status-badge";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -81,8 +83,17 @@ export function LeaveDetailsDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [remark, setRemark] = useState("");
   const [pending, startTransition] = useTransition();
   const showDecision = canDecide && request.status === "pending";
+
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setRemark("");
+    }
+
+    setOpen(next);
+  }
 
   function run(
     action: () => Promise<LeaveActionResult>,
@@ -99,6 +110,7 @@ export function LeaveDetailsDialog({
         }
 
         toast.success(success);
+        setRemark("");
         setOpen(false);
         setConfirmOpen(false);
       } catch {
@@ -109,7 +121,7 @@ export function LeaveDetailsDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <Button
             variant="ghost"
@@ -182,6 +194,19 @@ export function LeaveDetailsDialog({
             )}
           </ItemGroup>
 
+          {showDecision && (
+            <div className="grid gap-2">
+              <Label htmlFor="leave-decision-remark">Note (optional)</Label>
+              <Textarea
+                id="leave-decision-remark"
+                value={remark}
+                onChange={(event) => setRemark(event.target.value)}
+                placeholder="Add a note for the employee..."
+                maxLength={500}
+              />
+            </div>
+          )}
+
           <DialogFooter className="sm:justify-between">
             <div>
               {canCancel && (
@@ -207,7 +232,7 @@ export function LeaveDetailsDialog({
                     disabled={pending}
                     onClick={() =>
                       run(
-                        () => decideLeave(request.id, "rejected"),
+                        () => decideLeave(request.id, "rejected", remark),
                         "Leave request rejected",
                         "Could not update the request."
                       )
@@ -221,7 +246,7 @@ export function LeaveDetailsDialog({
                     disabled={pending}
                     onClick={() =>
                       run(
-                        () => decideLeave(request.id, "approved"),
+                        () => decideLeave(request.id, "approved", remark),
                         "Leave request approved",
                         "Could not update the request."
                       )

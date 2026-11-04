@@ -40,12 +40,14 @@ export function LeaveTable({
   manage,
   myEmployeeId,
   leaveTypes,
+  today,
 }: {
   requests: LeaveRequestItem[];
   approveAll: boolean;
   manage: boolean;
   myEmployeeId: string | null;
   leaveTypes: string[];
+  today: string;
 }) {
   const columns = useMemo<DataTableColumn<LeaveRequestItem>[]>(() => {
     const result: DataTableColumn<LeaveRequestItem>[] = [];
@@ -120,7 +122,8 @@ export function LeaveTable({
             !isOwn &&
             (manage || request.managerId === myEmployeeId);
           const canCancel = manage
-            ? request.status === "pending" || request.status === "approved"
+            ? request.status === "pending" ||
+              (request.status === "approved" && request.startDate >= today)
             : isOwn && request.status === "pending";
 
           return (
@@ -137,7 +140,7 @@ export function LeaveTable({
     );
 
     return result;
-  }, [approveAll, manage, myEmployeeId]);
+  }, [approveAll, manage, myEmployeeId, today]);
 
   const filters = useMemo<DataTableFilter<LeaveRequestItem>[]>(
     () => [

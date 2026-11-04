@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, isValid } from "date-fns";
+import { isValid } from "date-fns";
 
 function parseISODate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
@@ -22,8 +22,8 @@ function parseISODate(value: string) {
   return date;
 }
 
-// Inclusive calendar-day count between two ISO dates. Returns 0 for missing or
-// invalid ranges so callers can treat it as "no days selected".
+// Inclusive working-day count (Monday-Friday) between two ISO dates. Returns 0
+// for missing/invalid ranges or ranges that contain only weekend days.
 export function countLeaveDays(startDate: string, endDate: string): number {
   const start = parseISODate(startDate);
   const end = parseISODate(endDate);
@@ -32,5 +32,19 @@ export function countLeaveDays(startDate: string, endDate: string): number {
     return 0;
   }
 
-  return differenceInCalendarDays(end, start) + 1;
+  let count = 0;
+
+  for (
+    const day = new Date(start);
+    day <= end;
+    day.setDate(day.getDate() + 1)
+  ) {
+    const weekday = day.getDay();
+
+    if (weekday !== 0 && weekday !== 6) {
+      count += 1;
+    }
+  }
+
+  return count;
 }

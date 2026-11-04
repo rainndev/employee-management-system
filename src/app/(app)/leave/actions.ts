@@ -53,6 +53,16 @@ export async function createLeaveRequestAction(
 
   const startDate = String(formData.get("startDate") ?? "");
   const endDate = String(formData.get("endDate") ?? "");
+  const halfDay = formData.get("halfDay") === "on";
+  const workingDays = countLeaveDays(startDate, endDate);
+
+  if (halfDay && (startDate !== endDate || workingDays !== 1)) {
+    return {
+      errors: {
+        days: ["Half-day leave must use a single working day (Mon-Fri)."],
+      },
+    };
+  }
 
   // Days are derived from the selected range; never trust a posted count.
   const parsed = LeaveRequestSchema.safeParse({
@@ -60,7 +70,7 @@ export async function createLeaveRequestAction(
     leaveTypeId: formData.get("leaveTypeId"),
     startDate,
     endDate,
-    days: countLeaveDays(startDate, endDate),
+    days: halfDay ? 0.5 : workingDays,
     reason: formData.get("reason") ?? "",
   });
 
@@ -129,12 +139,23 @@ export async function createLeaveRequestAction(
 
 export async function decideLeave(
   id: string,
-  decision: "approved" | "rejected"
+  decision: "approved" | "rejected",
+  remark?: string
 ): Promise<LeaveActionResult> {
   const user = await requireRole("admin", "hr", "manager");
 
+  if (decision !== "approved" && decision !== "rejected") {
+    return { success: false, message: "Invalid leave decision." };
+  }
+
   if (!id || !UUID_RE.test(id)) {
     return { success: false, message: "Leave request not found." };
+  }
+
+  const note = String(remark ?? "").trim();
+
+  if (note.length > 500) {
+    return { success: false, message: "Keep the note under 500 characters." };
   }
 
   const approverId = await getMyEmployeeId(user.id);
@@ -146,7 +167,14 @@ export async function decideLeave(
   }
 
   try {
-    await setLeaveStatus(id, decision, approverId, user.role, user.id);
+    await setLeaveStatus(
+      id,
+      decision,
+      approverId,
+      user.role,
+      user.id,
+      note || null
+    );
   } catch (error) {
     if (
       error instanceof InsufficientLeaveBalanceError ||

@@ -4,6 +4,7 @@ import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
 import { recordAudit } from "@/lib/audit";
 import { isWorkingEmployeeStatus } from "@/lib/employee-status";
+import { ensureLeaveBalances } from "@/lib/leave";
 
 export type EmployeeListItem = EmployeeDetail & {
   name: string;
@@ -11,6 +12,21 @@ export type EmployeeListItem = EmployeeDetail & {
   position: string | null;
   userEmail: string | null;
 };
+
+// Minimal representation for read-only directory viewers (e.g. managers).
+// Deliberately excludes birthdate, phone, address, linked user id and manager id.
+export type EmployeeDirectoryItem = {
+  id: string;
+  employeeNo: string;
+  name: string;
+  department: string | null;
+  position: string | null;
+  status: string;
+  hireDate: string;
+};
+
+export type EmployeeTableItem = EmployeeDirectoryItem &
+  Partial<EmployeeDetail>;
 
 export type EmployeeDetail = {
   id: string;
@@ -67,6 +83,15 @@ export class EmployeeValidationError extends Error {
   }
 }
 
+export class LastActiveAdminError extends Error {
+  constructor() {
+    super(
+      "This is the last active admin. Assign another admin before deactivating this account."
+    );
+    this.name = "LastActiveAdminError";
+  }
+}
+
 async function withTransaction<T>(
   fn: (client: PoolClient) => Promise<T>
 ): Promise<T> {
@@ -83,6 +108,119 @@ async function withTransaction<T>(
   } finally {
     client.release();
   }
+}
+
+async function deactivateUser(client: PoolClient, userId: string) {
+  const { rows } = await client.query<{ role: string; is_active: boolean }>(
+    'SELECT role, is_active FROM "user" WHERE id = $1 FOR UPDATE',
+    [userId]
+  );
+
+  const user = rows[0];
+
+  if (!user || !user.is_active) {
+    return;
+  }
+
+  if (user.role === "admin") {
+    // Lock active admins so two concurrent offboardings cannot both remove the
+    // final admin. The second transaction will see the first one's update.
+    const { rows: admins } = await client.query(
+      'SELECT id FROM "user" WHERE role = \'admin\' AND is_active FOR UPDATE'
+    );
+
+    if (admins.length <= 1) {
+      throw new LastActiveAdminError();
+    }
+  }
+
+  await client.query('UPDATE "user" SET is_active = false WHERE id = $1', [
+    userId,
+  ]);
+}
+
+async function cancelOpenLeaveForEmployee(
+  client: PoolClient,
+  employeeId: string,
+  reason: string,
+  actorUserId: string | null
+) {
+  const { rows } = await client.query<{
+    id: string;
+    leave_type_id: string;
+    days: number;
+    year: number;
+    status: string;
+  }>(
+    `SELECT id,
+            leave_type_id,
+            days::float8 AS days,
+            EXTRACT(YEAR FROM start_date)::int AS year,
+            status
+     FROM leave_request
+     WHERE employee_id = $1
+       AND (
+         status = 'pending'
+         OR (status = 'approved' AND start_date >= CURRENT_DATE)
+       )
+     FOR UPDATE`,
+    [employeeId]
+  );
+
+  let pendingCancelled = 0;
+  let approvedCancelled = 0;
+
+  for (const request of rows) {
+    if (request.status === "approved") {
+      await ensureLeaveBalances(client, employeeId, request.year);
+      await client.query(
+        `UPDATE leave_balance
+         SET used = GREATEST(used - $1, 0)
+         WHERE employee_id = $2
+           AND leave_type_id = $3
+           AND year = $4`,
+        [request.days, employeeId, request.leave_type_id, request.year]
+      );
+      approvedCancelled += 1;
+    } else {
+      pendingCancelled += 1;
+    }
+
+    await client.query(
+      `UPDATE leave_request
+       SET status = 'cancelled',
+           decided_at = now(),
+           remark = $2
+       WHERE id = $1 AND status IN ('pending', 'approved')`,
+      [request.id, reason]
+    );
+
+    await recordAudit(client, {
+      actorUserId,
+      action: "leave.cancel",
+      entity: "leave_request",
+      entityId: request.id,
+      details: {
+        employeeId,
+        days: request.days,
+        automatic: true,
+        reason,
+      },
+    });
+  }
+
+  return { pendingCancelled, approvedCancelled };
+}
+
+async function clearDirectReports(client: PoolClient, managerId: string) {
+  const { rowCount } = await client.query(
+    `UPDATE employee
+     SET manager_id = NULL
+     WHERE manager_id = $1 AND id <> $1`,
+    [managerId]
+  );
+
+  return rowCount ?? 0;
 }
 
 // JOINs department, position and user so the list can show names instead of
@@ -151,6 +289,43 @@ export async function listEmployees(): Promise<EmployeeListItem[]> {
     department: row.department,
     position: row.position,
     userEmail: row.user_email,
+  }));
+}
+
+export async function listEmployeeDirectory(): Promise<EmployeeDirectoryItem[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    employee_no: string;
+    first_name: string;
+    last_name: string;
+    hire_date: string;
+    status: string;
+    department: string | null;
+    position: string | null;
+  }>(
+    `SELECT e.id,
+            e.employee_no,
+            e.first_name,
+            e.last_name,
+            coalesce(to_char(e.hire_date, 'YYYY-MM-DD'), '') AS hire_date,
+            e.status,
+            d.name AS department,
+            p.title AS position
+     FROM employee e
+     LEFT JOIN department d ON d.id = e.department_id
+     LEFT JOIN position p ON p.id = e.position_id
+     WHERE e.deleted_at IS NULL
+     ORDER BY e.last_name ASC, e.first_name ASC`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    employeeNo: row.employee_no,
+    name: `${row.first_name} ${row.last_name}`,
+    department: row.department,
+    position: row.position,
+    status: row.status,
+    hireDate: row.hire_date,
   }));
 }
 
@@ -403,9 +578,7 @@ export async function createEmployee(
     const employeeId = rows[0].id;
 
     if (input.userId && !isWorkingEmployeeStatus(input.status)) {
-      await client.query('UPDATE "user" SET is_active = false WHERE id = $1', [
-        input.userId,
-      ]);
+      await deactivateUser(client, input.userId);
     }
 
     await recordAudit(client, {
@@ -487,27 +660,34 @@ export async function updateEmployee(
       throw new EmployeeNotFoundError();
     }
 
-    if (!isWorkingEmployeeStatus(updated.status)) {
-      const userIds = [previousUserId, updated.user_id].filter(
-        (value): value is string => Boolean(value)
-      );
+    let pendingLeaveCancelled = 0;
+    let approvedLeaveCancelled = 0;
+    let reportsUnassigned = 0;
 
-      if (userIds.length > 0) {
-        await client.query(
-          'UPDATE "user" SET is_active = false WHERE id = ANY($1::uuid[])',
-          [userIds]
-        );
+    if (!isWorkingEmployeeStatus(updated.status)) {
+      const userIds = [
+        ...new Set(
+          [previousUserId, updated.user_id].filter(
+            (value): value is string => Boolean(value)
+          )
+        ),
+      ];
+
+      // Deactivate sequentially so the last-admin guard sees prior updates.
+      for (const userId of userIds) {
+        await deactivateUser(client, userId);
       }
 
-      // Pending leave should not stay actionable after someone is offboarded.
-      await client.query(
-        `UPDATE leave_request
-         SET status = 'cancelled',
-             decided_at = now(),
-             remark = 'Cancelled because the employee is no longer active.'
-         WHERE employee_id = $1 AND status = 'pending'`,
-        [id]
+      const leave = await cancelOpenLeaveForEmployee(
+        client,
+        id,
+        "Cancelled because the employee is no longer active.",
+        actorUserId
       );
+
+      pendingLeaveCancelled = leave.pendingCancelled;
+      approvedLeaveCancelled = leave.approvedCancelled;
+      reportsUnassigned = await clearDirectReports(client, id);
     }
 
     await recordAudit(client, {
@@ -515,7 +695,13 @@ export async function updateEmployee(
       action: "employee.update",
       entity: "employee",
       entityId: id,
-      details: { employeeNo: input.employeeNo, status: input.status },
+      details: {
+        employeeNo: input.employeeNo,
+        status: input.status,
+        pendingLeaveCancelled,
+        approvedLeaveCancelled,
+        reportsUnassigned,
+      },
     });
 
     return updated;
@@ -545,33 +731,28 @@ export async function softDeleteEmployee(
     }
 
     if (deleted.user_id) {
-      await client.query('UPDATE "user" SET is_active = false WHERE id = $1', [
-        deleted.user_id,
-      ]);
+      await deactivateUser(client, deleted.user_id);
     }
 
-    await client.query(
-      `UPDATE leave_request
-       SET status = 'cancelled',
-           decided_at = now(),
-           remark = 'Cancelled because the employee record was deleted.'
-       WHERE employee_id = $1 AND status = 'pending'`,
-      [id]
+    const leave = await cancelOpenLeaveForEmployee(
+      client,
+      id,
+      "Cancelled because the employee record was deleted.",
+      actorUserId
     );
 
-    await client.query(
-      `UPDATE employee
-       SET manager_id = NULL
-       WHERE manager_id = $1 AND id <> $1`,
-      [id]
-    );
+    const reportsUnassigned = await clearDirectReports(client, id);
 
     await recordAudit(client, {
       actorUserId,
       action: "employee.delete",
       entity: "employee",
       entityId: id,
-      details: null,
+      details: {
+        pendingLeaveCancelled: leave.pendingCancelled,
+        approvedLeaveCancelled: leave.approvedCancelled,
+        reportsUnassigned,
+      },
     });
 
     return true;

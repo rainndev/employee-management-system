@@ -8,6 +8,7 @@ import {
   EmployeeNotFoundError,
   EmployeeValidationError,
   getEmployeeAssignments,
+  LastActiveAdminError,
   softDeleteEmployee,
   updateEmployee,
   validateEmployeeReferences,
@@ -112,6 +113,10 @@ export async function saveEmployee(
       return { message: error.message };
     }
 
+    if (error instanceof LastActiveAdminError) {
+      return { message: error.message };
+    }
+
     console.error("saveEmployee failed:", error);
 
     if (errorString(error, "code") === "23505") {
@@ -174,6 +179,10 @@ export async function deleteEmployee(
       return { success: false, message: "Employee not found." };
     }
   } catch (error) {
+    if (error instanceof LastActiveAdminError) {
+      return { success: false, message: error.message };
+    }
+
     console.error("deleteEmployee failed:", error);
     return { success: false, message: "Could not delete the employee." };
   }

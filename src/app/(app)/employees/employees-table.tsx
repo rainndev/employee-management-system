@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import type { EmployeeListItem, Option } from "@/lib/employees";
+import type {
+  EmployeeListItem,
+  EmployeeTableItem,
+  Option,
+} from "@/lib/employees";
 import { StatusBadge } from "@/components/status-badge";
 import {
   DataTable,
@@ -17,7 +21,7 @@ const STATUS_OPTIONS = [
   { value: "terminated", label: "Terminated" },
 ];
 
-function getSearchText(employee: EmployeeListItem) {
+function getSearchText(employee: EmployeeTableItem) {
   return [
     employee.employeeNo,
     employee.name,
@@ -38,15 +42,15 @@ export function EmployeesTable({
   managers,
   users,
 }: {
-  employees: EmployeeListItem[];
+  employees: EmployeeTableItem[];
   manage: boolean;
   departments: Option[];
   positions: Option[];
   managers: Option[];
   users: Option[];
 }) {
-  const columns = useMemo<DataTableColumn<EmployeeListItem>[]>(() => {
-    const result: DataTableColumn<EmployeeListItem>[] = [
+  const columns = useMemo<DataTableColumn<EmployeeTableItem>[]>(() => {
+    const result: DataTableColumn<EmployeeTableItem>[] = [
       {
         id: "employeeNo",
         accessorFn: (employee) => employee.employeeNo,
@@ -101,7 +105,9 @@ export function EmployeesTable({
         header: "",
         enableSorting: false,
         cell: ({ row }) => {
-          const employee = row.original;
+          // The page only sends full records when manage is true; the
+          // directory view supplies the display-only shape above.
+          const employee = row.original as EmployeeListItem;
           const rowUsers =
             employee.userId && employee.userEmail
               ? [...users, { id: employee.userId, label: employee.userEmail }]
@@ -128,7 +134,7 @@ export function EmployeesTable({
     return result;
   }, [manage, departments, positions, managers, users]);
 
-  const filters = useMemo<DataTableFilter<EmployeeListItem>[]>(
+  const filters = useMemo<DataTableFilter<EmployeeTableItem>[]>(
     () => [
       {
         id: "department",

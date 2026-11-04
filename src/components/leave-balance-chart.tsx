@@ -75,6 +75,11 @@ export function LeaveBalanceChart({
   );
 
   const hasUncapped = data.some((item) => item.allocated <= 0);
+  const overAllocated = capped.filter((item) => item.used > item.allocated);
+  const overAllocatedDays = overAllocated.reduce(
+    (total, item) => total + (item.used - item.allocated),
+    0
+  );
 
   return (
     <Card>
@@ -93,6 +98,15 @@ export function LeaveBalanceChart({
               <SummaryTile label="Used" value={totals.used} />
               <SummaryTile label="Pending" value={totals.pending} />
             </div>
+
+            {overAllocated.length > 0 && (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                Used leave exceeds the allocation by{" "}
+                {formatDays(overAllocatedDays)}{" "}
+                {overAllocatedDays === 1 ? "day" : "days"}. Contact HR to
+                reconcile the balance.
+              </p>
+            )}
 
             <div className="grid gap-2">
               {capped.map((item, index) => (
