@@ -34,21 +34,23 @@ async function insertEmployee(
     managerId: string | null;
     departmentId: string;
     positionId: string;
+    gender?: string;
     phone?: string;
     address?: string;
   }
 ) {
   const { rows } = await client.query<{ id: string }>(
     `INSERT INTO employee
-       (employee_no, first_name, last_name, birthdate, hire_date, status,
+       (employee_no, first_name, last_name, birthdate, gender, hire_date, status,
         department_id, position_id, manager_id, user_id, phone, address)
-     VALUES ($1, $2, $3, DATE '1990-01-01', DATE '2020-01-01', 'active',
-             $4, $5, $6, $7, $8, $9)
+     VALUES ($1, $2, $3, DATE '1990-01-01', $4, DATE '2020-01-01', 'active',
+             $5, $6, $7, $8, $9, $10)
      RETURNING id`,
     [
       input.employeeNo,
       input.firstName,
       input.lastName,
+      input.gender ?? null,
       input.departmentId,
       input.positionId,
       input.managerId,
@@ -198,6 +200,7 @@ async function seedFixtures(client: Client) {
     managerId,
     departmentId,
     positionId,
+    gender: "male",
   });
 
   await insertEmployee(client, {
@@ -268,6 +271,7 @@ async function seedFixtures(client: Client) {
     managerId,
     departmentId,
     positionId,
+    gender: "female",
   });
 
   await insertEmployee(client, {

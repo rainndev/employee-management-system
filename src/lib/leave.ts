@@ -12,6 +12,7 @@ export type LeaveType = {
   name: string;
   defaultDays: number;
   isPaid: boolean;
+  eligibleGender: string | null;
 };
 
 export type LeaveRequestItem = {
@@ -123,6 +124,13 @@ export class LeaveTypeNotAvailableError extends Error {
   }
 }
 
+export class LeaveTypeGenderError extends Error {
+  constructor() {
+    super("This leave type is not available for the employee's gender.");
+    this.name = "LeaveTypeGenderError";
+  }
+}
+
 function formatDays(value: number) {
   return Number.isInteger(value)
     ? String(value)
@@ -157,7 +165,9 @@ export async function ensureLeaveBalances(
     `INSERT INTO leave_balance (employee_id, leave_type_id, year, allocated)
      SELECT $1, lt.id, $2, lt.default_days
      FROM leave_type lt
+     JOIN employee e ON e.id = $1
      WHERE lt.deleted_at IS NULL
+       AND (lt.eligible_gender IS NULL OR lt.eligible_gender = e.gender)
      ON CONFLICT (employee_id, leave_type_id, year) DO NOTHING`,
     [employeeId, year]
   );
@@ -169,8 +179,9 @@ export async function listLeaveTypes(): Promise<LeaveType[]> {
     name: string;
     default_days: number;
     is_paid: boolean;
+    eligible_gender: string | null;
   }>(
-    `SELECT id, name, default_days, is_paid
+    `SELECT id, name, default_days, is_paid, eligible_gender
      FROM leave_type
      WHERE deleted_at IS NULL
      ORDER BY name ASC`
@@ -181,6 +192,7 @@ export async function listLeaveTypes(): Promise<LeaveType[]> {
     name: row.name,
     defaultDays: row.default_days,
     isPaid: row.is_paid,
+    eligibleGender: row.eligible_gender,
   }));
 }
 
@@ -192,7 +204,9 @@ export async function getLeaveBalances(
     `INSERT INTO leave_balance (employee_id, leave_type_id, year, allocated)
      SELECT $1, lt.id, $2, lt.default_days
      FROM leave_type lt
+     JOIN employee e ON e.id = $1
      WHERE lt.deleted_at IS NULL
+       AND (lt.eligible_gender IS NULL OR lt.eligible_gender = e.gender)
      ON CONFLICT (employee_id, leave_type_id, year) DO NOTHING`,
     [employeeId, year]
   );
@@ -213,6 +227,7 @@ export async function getLeaveBalances(
             coalesce(p.pending, 0)::float8 AS pending
      FROM leave_balance lb
      JOIN leave_type lt ON lt.id = lb.leave_type_id
+     JOIN employee e ON e.id = lb.employee_id
      LEFT JOIN (
        SELECT leave_type_id, sum(days) AS pending
        FROM leave_request
@@ -224,6 +239,7 @@ export async function getLeaveBalances(
      WHERE lb.employee_id = $1
        AND lb.year = $2
        AND lt.deleted_at IS NULL
+       AND (lt.eligible_gender IS NULL OR lt.eligible_gender = e.gender)
      ORDER BY lt.name ASC`,
     [employeeId, year]
   );
@@ -352,6 +368,15 @@ export async function listLeaveRequests(
   }));
 }
 
+export async function getEmployeeGender(employeeId: string): Promise<string> {
+  const { rows } = await pool.query<{ gender: string | null }>(
+    "SELECT gender FROM employee WHERE id = $1 AND deleted_at IS NULL",
+    [employeeId]
+  );
+
+  return rows[0]?.gender ?? "";
+}
+
 export async function getMyEmployeeId(userId: string): Promise<string | null> {
   const { rows } = await pool.query<{ id: string }>(
     `SELECT id
@@ -403,8 +428,9 @@ export async function createLeaveRequest(
   return withTransaction(async (client) => {
     const { rows: employeeRows } = await client.query<{
       status: string;
+      gender: string | null;
     }>(
-      `SELECT status
+      `SELECT status, gender
        FROM employee
        WHERE id = $1 AND deleted_at IS NULL
        FOR UPDATE`,
@@ -419,13 +445,26 @@ export async function createLeaveRequest(
       );
     }
 
-    const { rowCount: leaveTypeCount } = await client.query(
-      "SELECT 1 FROM leave_type WHERE id = $1 AND deleted_at IS NULL",
+    const { rows: leaveTypeRows } = await client.query<{
+      eligible_gender: string | null;
+    }>(
+      `SELECT eligible_gender
+       FROM leave_type
+       WHERE id = $1 AND deleted_at IS NULL`,
       [input.leaveTypeId]
     );
 
-    if (!leaveTypeCount) {
+    const leaveType = leaveTypeRows[0];
+
+    if (!leaveType) {
       throw new LeaveTypeNotAvailableError();
+    }
+
+    if (
+      leaveType.eligible_gender &&
+      leaveType.eligible_gender !== employee.gender
+    ) {
+      throw new LeaveTypeGenderError();
     }
 
     await ensureLeaveBalances(client, input.employeeId, year);

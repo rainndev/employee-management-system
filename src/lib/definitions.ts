@@ -174,9 +174,12 @@ export const LeaveTypeSchema = z.object({
     })
     .transform((value) => Number(value))
     .refine((value) => value >= 0, { error: "Days cannot be negative." })
-    .refine((value) => value <= 365, {
-      error: "Keep it at 365 days or fewer.",
+    .refine((value) => value <= 999, {
+      error: "Keep it at 999 days or fewer.",
     }),
+  eligibleGender: z.enum(["", "male", "female", "other"], {
+    error: "Choose a gender eligibility.",
+  }),
 });
 
 export const DepartmentSchema = z.object({

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { requireUser } from "@/lib/dal";
 import { canApprove, canManage } from "@/lib/roles";
 import {
+  getEmployeeGender,
   getLeaveBalances,
   getMyEmployeeId,
   listLeaveRequests,
@@ -49,14 +50,16 @@ async function Content() {
         : listLeaveRequests({ employeeId: myEmployeeId })
       : Promise.resolve([]);
 
-  const [leaveTypes, requests, employees, balances] = await Promise.all([
-    listLeaveTypes(),
-    requestsPromise,
-    manage ? listEmployeeOptions() : Promise.resolve([]),
-    myEmployeeId
-      ? getLeaveBalances(myEmployeeId, currentYear)
-      : Promise.resolve([]),
-  ]);
+  const [leaveTypes, requests, employees, balances, employeeGender] =
+    await Promise.all([
+      listLeaveTypes(),
+      requestsPromise,
+      manage ? listEmployeeOptions() : Promise.resolve([]),
+      myEmployeeId
+        ? getLeaveBalances(myEmployeeId, currentYear)
+        : Promise.resolve([]),
+      myEmployeeId ? getEmployeeGender(myEmployeeId) : Promise.resolve(""),
+    ]);
 
   const canFileOwn = manage || myEmployeeId !== null;
 
@@ -79,6 +82,7 @@ async function Content() {
           <LeaveRequestForm
             leaveTypes={leaveTypes}
             employees={manage ? employees : undefined}
+            employeeGender={employeeGender}
             today={today}
           />
         )}

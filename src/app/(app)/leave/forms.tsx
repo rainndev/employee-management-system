@@ -47,6 +47,7 @@ function Field({
 export function LeaveRequestForm({
   leaveTypes,
   employees,
+  employeeGender,
   today,
   open: controlledOpen,
   onOpenChange,
@@ -54,6 +55,7 @@ export function LeaveRequestForm({
 }: {
   leaveTypes: LeaveType[];
   employees?: Option[];
+  employeeGender: string;
   today: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -82,9 +84,25 @@ export function LeaveRequestForm({
   const uid = useId();
   const fieldId = (name: string) => `${uid}-${name}`;
 
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [leaveTypeId, setLeaveTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [halfDay, setHalfDay] = useState(false);
+  const selectedEmployee = employees?.find(
+    (employee) => employee.id === selectedEmployeeId
+  );
+  const targetGender = employees
+    ? selectedEmployeeId
+      ? (selectedEmployee?.gender ?? "")
+      : null
+    : employeeGender;
+  const eligibleLeaveTypes =
+    targetGender === null
+      ? leaveTypes
+      : leaveTypes.filter(
+          (type) => !type.eligibleGender || type.eligibleGender === targetGender
+        );
   const workingDays = useMemo(
     () => countLeaveDays(startDate, endDate),
     [startDate, endDate]
@@ -107,12 +125,19 @@ export function LeaveRequestForm({
   function handleOpenChange(next: boolean) {
     if (next) {
       setVisibleState(undefined);
+      setSelectedEmployeeId("");
+      setLeaveTypeId("");
       setStartDate("");
       setEndDate("");
       setHalfDay(false);
     }
 
     setOpen(next);
+  }
+
+  function changeEmployee(value: string) {
+    setSelectedEmployeeId(value);
+    setLeaveTypeId("");
   }
 
   return (
@@ -141,6 +166,8 @@ export function LeaveRequestForm({
               <DropdownSelect
                 name="employeeId"
                 id={fieldId("employeeId")}
+                value={selectedEmployeeId}
+                onValueChange={changeEmployee}
                 options={employees.map((option) => ({
                   value: option.id,
                   label: option.label,
@@ -159,11 +186,17 @@ export function LeaveRequestForm({
             <DropdownSelect
               name="leaveTypeId"
               id={fieldId("leaveTypeId")}
-              options={leaveTypes.map((type) => ({
+              value={leaveTypeId}
+              onValueChange={setLeaveTypeId}
+              options={eligibleLeaveTypes.map((type) => ({
                 value: type.id,
                 label: type.name,
               }))}
-              placeholder="— Select type —"
+              placeholder={
+                eligibleLeaveTypes.length === 0
+                  ? "— No eligible types —"
+                  : "— Select type —"
+              }
               ariaInvalid={Boolean(visibleState?.errors?.leaveTypeId)}
             />
           </Field>

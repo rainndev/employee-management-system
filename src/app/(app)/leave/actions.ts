@@ -15,6 +15,7 @@ import {
   LeaveRequestNotCancellableError,
   LeaveRequestNotFoundError,
   LeaveRequestNotPendingError,
+  LeaveTypeGenderError,
   LeaveTypeNotAvailableError,
   NotTeamMemberError,
   PastLeaveDateError,
@@ -109,7 +110,10 @@ export async function createLeaveRequestAction(
       return { message: error.message };
     }
 
-    if (error instanceof LeaveTypeNotAvailableError) {
+    if (
+      error instanceof LeaveTypeNotAvailableError ||
+      error instanceof LeaveTypeGenderError
+    ) {
       return { message: error.message };
     }
 

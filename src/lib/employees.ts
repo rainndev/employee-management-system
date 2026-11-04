@@ -63,6 +63,7 @@ export type EmployeeInput = {
 export type Option = {
   id: string;
   label: string;
+  gender?: string;
 };
 
 export class EmployeeNotFoundError extends Error {
@@ -349,8 +350,14 @@ export async function listManagerOptions(
 }
 
 export async function listEmployeeOptions(): Promise<Option[]> {
-  const { rows } = await pool.query<{ id: string; label: string }>(
-    `SELECT id, first_name || ' ' || last_name AS label
+  const { rows } = await pool.query<{
+    id: string;
+    label: string;
+    gender: string;
+  }>(
+    `SELECT id,
+            first_name || ' ' || last_name AS label,
+            coalesce(gender, '') AS gender
      FROM employee
      WHERE deleted_at IS NULL
        AND status IN ('active', 'on_leave')

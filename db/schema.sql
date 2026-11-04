@@ -91,12 +91,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS user_email_lower_key
 CREATE TABLE IF NOT EXISTS leave_type (
     id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name         text NOT NULL,
-    default_days integer NOT NULL DEFAULT 0,
-    is_paid      boolean NOT NULL DEFAULT true,
-    deleted_at   timestamptz,
-    created_at   timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT leave_type_default_days_check CHECK (default_days >= 0)
+    default_days    integer NOT NULL DEFAULT 0,
+    is_paid         boolean NOT NULL DEFAULT true,
+    eligible_gender text,
+    deleted_at      timestamptz,
+    created_at      timestamptz NOT NULL DEFAULT now(),
+    updated_at      timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT leave_type_default_days_check CHECK (default_days >= 0),
+    CONSTRAINT leave_type_eligible_gender_check
+        CHECK (eligible_gender IS NULL OR eligible_gender IN ('male', 'female', 'other'))
 );
 
 -- Names are unique among active leave types and are case-insensitive.

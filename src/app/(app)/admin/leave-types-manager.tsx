@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import type { AdminLeaveType } from "@/lib/leave-types";
 import type { ActionState } from "@/lib/definitions";
+import { NONE_VALUE } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,8 +47,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DropdownSelect } from "@/components/dropdown-select";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
 import { deleteLeaveType, saveLeaveType } from "./leave-type-actions";
+
+const GENDER_OPTIONS = [
+  { value: NONE_VALUE, label: "All genders" },
+  { value: "female", label: "Female only" },
+  { value: "male", label: "Male only" },
+  { value: "other", label: "Other only" },
+];
 
 function Field({
   label,
@@ -138,7 +147,7 @@ function LeaveTypeForm({
           </Field>
 
           <Field
-            label="Default days per year"
+            label="Max allocated days per year"
             htmlFor={fieldId("defaultDays")}
             error={visibleState?.errors?.defaultDays}
           >
@@ -147,10 +156,25 @@ function LeaveTypeForm({
               name="defaultDays"
               type="number"
               min={0}
-              max={365}
+              max={999}
               step={1}
               defaultValue={leaveType?.defaultDays ?? 0}
               aria-invalid={Boolean(visibleState?.errors?.defaultDays)}
+            />
+          </Field>
+
+          <Field
+            label="Gender eligibility"
+            htmlFor={fieldId("eligibleGender")}
+            error={visibleState?.errors?.eligibleGender}
+          >
+            <DropdownSelect
+              id={fieldId("eligibleGender")}
+              name="eligibleGender"
+              defaultValue={leaveType?.eligibleGender || NONE_VALUE}
+              options={GENDER_OPTIONS}
+              placeholder="All genders"
+              ariaInvalid={Boolean(visibleState?.errors?.eligibleGender)}
             />
           </Field>
 
@@ -226,7 +250,8 @@ export function LeaveTypesManager({
             <TableHeader className="[&_th]:text-muted-foreground">
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Default days</TableHead>
+                <TableHead>Max allocated</TableHead>
+                <TableHead>Gender</TableHead>
                 <TableHead>Paid</TableHead>
                 <TableHead>Requests</TableHead>
                 <TableHead />
@@ -236,7 +261,7 @@ export function LeaveTypesManager({
               {leaveTypes.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center text-muted-foreground"
                   >
                     No active leave types.
@@ -250,6 +275,9 @@ export function LeaveTypesManager({
                     {leaveType.name}
                   </TableCell>
                   <TableCell>{leaveType.defaultDays}</TableCell>
+                  <TableCell className="capitalize">
+                    {leaveType.eligibleGender ?? "All genders"}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={leaveType.isPaid ? "secondary" : "outline"}>
                       {leaveType.isPaid ? "Paid" : "Unpaid"}

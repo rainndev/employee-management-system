@@ -4,6 +4,7 @@ import { countLeaveDays } from "../src/lib/leave-days.ts";
 import {
   EmployeeSchema,
   LeaveRequestSchema,
+  LeaveTypeSchema,
   SignupFormSchema,
   todayInCompanyTimeZone,
 } from "../src/lib/definitions.ts";
@@ -136,4 +137,34 @@ test("signup emails are trimmed and lower-cased", () => {
 
   assert.equal(parsed.success, true);
   assert.equal(parsed.data.email, "user@example.com");
+});
+
+test("leave types support up to 999 allocated days and gender eligibility", () => {
+  const parsed = LeaveTypeSchema.safeParse({
+    name: "Maternity",
+    defaultDays: "500",
+    eligibleGender: "female",
+  });
+
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.data.defaultDays, 500);
+  assert.equal(parsed.data.eligibleGender, "female");
+
+  assert.equal(
+    LeaveTypeSchema.safeParse({
+      name: "Maternity",
+      defaultDays: "1000",
+      eligibleGender: "female",
+    }).success,
+    false
+  );
+
+  assert.equal(
+    LeaveTypeSchema.safeParse({
+      name: "Maternity",
+      defaultDays: "",
+      eligibleGender: "female",
+    }).success,
+    false
+  );
 });

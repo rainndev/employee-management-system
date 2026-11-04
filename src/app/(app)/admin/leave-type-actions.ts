@@ -9,6 +9,7 @@ import {
   updateLeaveType,
 } from "@/lib/leave-types";
 import { LeaveTypeSchema, type ActionState } from "@/lib/definitions";
+import { optionalString } from "@/lib/constants";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -32,6 +33,7 @@ export async function saveLeaveType(
   const parsed = LeaveTypeSchema.safeParse({
     name: formData.get("name"),
     defaultDays: formData.get("defaultDays"),
+    eligibleGender: optionalString(formData.get("eligibleGender")),
   });
 
   if (!parsed.success) {
@@ -42,6 +44,7 @@ export async function saveLeaveType(
     name: parsed.data.name,
     defaultDays: parsed.data.defaultDays,
     isPaid: formData.get("isPaid") === "on",
+    eligibleGender: parsed.data.eligibleGender || null,
   };
 
   try {
