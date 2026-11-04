@@ -28,14 +28,14 @@ Forms use shadcn `Input`, `Textarea` and `Select`. Radix `Select` renders a hidd
 
 ## 1. Create the database and tables
 
-> **Already have these tables?** Run `db/migrations/001_add_timestamps.sql` in the Query Tool. It adds `created_at` / `updated_at` to every table (existing rows get the migration time) and installs a `set_updated_at` trigger that keeps `updated_at` current on every update. Then jump to step 2.
+> **Already have these tables?** Run every file in `db/migrations/` in order (or `pnpm db:migrate`). The migrations add timestamps, the leave-overlap constraint, leave balances, case-insensitive identity indexes, `session_version`, the audit log, and the soft-delete-friendly employee indexes. Then jump to step 2.
 
 Open **pgAdmin 4** and connect to your PostgreSQL server.
 
 1. Create the database: right-click **Databases** → **Create** → **Database...** → name it `ems` → **Save**.
 2. Open the Query Tool on `ems`: right-click the `ems` database → **Query Tool**.
 3. Open `db/schema.sql` (File → Open, or paste it in) and press **F5** to execute.
-4. Verify the tables: expand `ems` → **Schemas** → **public** → **Tables**. You should see 8 tables: `department`, `position`, `user`, `leave_type`, `employee`, `attendance`, `leave_request`, `leave_balance`.
+4. Verify the tables: expand `ems` → **Schemas** → **public** → **Tables**. You should see 9 tables: `department`, `position`, `user`, `leave_type`, `employee`, `attendance`, `leave_request`, `leave_balance`, `audit_log`.
 
 > `"user"` is a reserved keyword in PostgreSQL, so it must always be double-quoted in SQL: `SELECT * FROM "user";`
 
@@ -86,13 +86,13 @@ Or paste `db/seed.sql` into pgAdmin's Query Tool and press **F5**.
 | Positions — create/edit/delete | ✅ | ✅ | — | — |
 | Employees — view | ✅ | ✅ | ✅ | — |
 | Employees — create/edit/delete | ✅ | ✅ | — | — |
-| Leave — view | all | all | all | own |
+| Leave — view | all | all | own + direct reports | own |
 | Leave — file a request | anyone | anyone | own | own |
-| Leave — approve/reject | ✅ | ✅ | ✅ | — |
-| Leave — delete | any | any | own pending | own pending |
+| Leave — approve/reject | ✅ | ✅ | own direct reports | — |
+| Leave — cancel | any pending/approved | any pending/approved | own pending | own pending |
 | Admin (users, roles, resets) | ✅ | — | — | — |
 
-Permissions are enforced in `src/lib/dal.ts` (`requireRole`) and re-checked inside **every** Server Action — the UI hides links, but the server is the security boundary.
+Permissions are enforced in `src/lib/dal.ts` (`requireRole`) and re-checked inside **every** Server Action — the UI hides links, but the server is the security boundary. Nobody can approve their own leave request; managers are restricted to their direct reports.
 
 ### Dashboard analytics
 
@@ -122,16 +122,16 @@ Every clause in the rubric is used in application code:
 | `SELECT` | all of `src/lib/*.ts` |
 | `INSERT` | `createDepartment`, `createPosition`, `createEmployee`, `createLeaveRequest` |
 | `UPDATE` | `updateDepartment`, `updatePosition`, `updateEmployee`, `setLeaveStatus`, soft deletes |
-| `DELETE` | `deleteLeaveRequest` |
+| `DELETE` | none — leave is cancelled, and employees/departments/positions use soft deletes |
 | `WHERE` | every list/detail query, e.g. `deleted_at IS NULL`, `status = 'pending'` |
 | `ORDER BY` | lists ordered by `name`, `title`, `last_name`, `start_date DESC` |
 | `JOIN` | `listEmployees` (department, position), `listLeaveRequests` (employee, leave_type, approver), `listUserOptions` (LEFT JOIN … IS NULL) |
 
 ## Authentication
 
-- **Signup** (`/signup`) inserts into `"user"` (`email`, `password_hash`, `role`) with bcrypt-hashed passwords. New accounts get the `employee` role.
-- **Login** (`/login`) verifies the bcrypt hash and rejects disabled accounts (`is_active = false`).
-- **Session** is a signed JWT (HS256, `jose`) stored in an `httpOnly` cookie named `session`, valid for 7 days. The token holds **only the user id** — the role is read from the database on each request, so role and status changes apply immediately.
+- **Signup** (`/signup`) inserts into `"user"` (`email`, `password_hash`, `role`) with bcrypt-hashed passwords. Emails are trimmed/lower-cased and unique case-insensitively. New accounts get the `employee` role. Set `SIGNUP_ALLOWED_DOMAINS` to restrict self-service signup to approved domains.
+- **Login** (`/login`) verifies the bcrypt hash and rejects disabled accounts (`is_active = false`). Login and signup are rate-limited.
+- **Session** is a signed JWT (HS256, `jose`) stored in an `httpOnly` cookie named `session`, valid for 7 days. The token holds the user id and a `session_version`; the role is read from the database on each request, so role and status changes apply immediately.
 - **Dashboard** (`/dashboard`) reads the session via the data access layer in `src/lib/dal.ts`.
 
 ## Admin dashboard
@@ -140,23 +140,11 @@ Every clause in the rubric is used in application code:
 
 - change a user's role
 - enable or disable an account
-- **set a new password for a user** (bcrypt-hashed, same rules as signup: 8+ characters with a letter and a number)
+- **set a new password for a user** (bcrypt-hashed, same rules as signup: 8 to 72 characters with a letter and a number); this signs out the user's existing sessions
 
-An admin cannot edit their own row, so they cannot lock themselves out. Share a reset password with the user directly — there is no email delivery.
+An admin cannot edit their own row. Everyone can change their own password from **Account → Change password**, which signs out other sessions. Share a reset password with the user directly — there is no email delivery.
 
-Role changes and deactivations take effect on the target user's very next request, because `getCurrentUser()` re-reads `role` and `is_active` from the database instead of trusting the cookie. A password reset does **not** end the target's existing session; see the note below.
-
-### Password resets do not end existing sessions
-
-Sessions are stateless: the cookie holds a signed user id valid for 7 days. Changing `password_hash` does not invalidate an already-issued cookie, so if the account was compromised, the intruder keeps access until the cookie expires.
-
-To close that gap, add a token version to the user table, include it in the session cookie, and reject cookies whose version is stale:
-
-```sql
-ALTER TABLE "user" ADD COLUMN session_version integer NOT NULL DEFAULT 0;
-```
-
-Then bump `session_version` on password reset and compare it in `getCurrentUser()`. Until then, disable the account instead — disabling takes effect immediately.
+Role changes and deactivations take effect on the target user's very next request, because `getCurrentUser()` re-reads `role` and `is_active` from the database instead of trusting the cookie. Password changes and admin resets bump `session_version`, so older cookies are rejected immediately.
 
 ### Promoting the first admin
 
@@ -182,9 +170,12 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | `src/lib/departments.ts`      | Department queries (list, insert, update, soft delete)                                               |
 | `src/lib/positions.ts`        | Position queries                                                                                     |
 | `src/lib/employees.ts`        | Employee queries with JOINs, options, soft delete                                                    |
-| `src/lib/leave.ts`            | Leave types and leave request queries                                                                |
+| `src/lib/leave.ts`            | Leave types, balances, requests, overlap and approval rules                                          |
 | `src/lib/admin.ts`            | Admin stats and user list queries                                                                    |
 | `src/lib/definitions.ts`      | Zod schemas and form state types                                                                     |
+| `src/lib/env.ts`              | Fail-fast environment validation                                                                     |
+| `src/lib/rate-limit.ts`       | In-memory login/signup rate limiting                                                                 |
+| `src/lib/audit.ts`            | Audit-log helper                                                                                     |
 | `src/app/actions/auth.ts`     | `signup`, `login`, `logout` Server Actions                                                           |
 | `src/components/ui/`           | shadcn/ui components (Button, Input, Select, Card, Table, Badge, Alert, Sidebar, …)                   |
 | `src/components/app-sidebar.tsx` | Role-aware sidebar navigation                                                                      |
@@ -193,12 +184,14 @@ Sign out and back in (or just reload) and the **Admin dashboard** link appears o
 | `src/app/(app)/layout.tsx`    | Sidebar shell + header for signed-in pages                                                            |
 | `src/app/(app)/*/actions.ts`  | Per-module create/update/delete Server Actions                                                       |
 | `src/app/(app)/admin/`        | Admin dashboard (roles, account status, password reset)                                              |
+| `src/app/(app)/account/`      | Self-service password change                                                                         |
 
 ## Scripts
 
 ```bash
 pnpm dev          # development server
 pnpm build        # production build
+pnpm test         # validation unit tests
 pnpm start        # run the production build
 pnpm lint         # ESLint
 pnpm format       # Prettier (with Tailwind class sorting)

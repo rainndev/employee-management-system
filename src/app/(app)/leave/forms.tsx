@@ -60,9 +60,11 @@ export function LeaveRequestForm({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
-  const [state, action, pending] = useActionState<ActionState, FormData>(
+  const [visibleState, setVisibleState] = useState<ActionState>(undefined);
+  const [, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await createLeaveRequestAction(previous, formData);
+      setVisibleState(next);
       if (next?.success) {
         setOpen(false);
         toast.success("Leave request submitted");
@@ -85,8 +87,18 @@ export function LeaveRequestForm({
     [startDate, endDate]
   );
 
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setVisibleState(undefined);
+      setStartDate("");
+      setEndDate("");
+    }
+
+    setOpen(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button>New leave request</Button>
@@ -106,7 +118,7 @@ export function LeaveRequestForm({
             <Field
               label="Employee"
               htmlFor={fieldId("employeeId")}
-              error={state?.errors?.employeeId}
+              error={visibleState?.errors?.employeeId}
             >
               <DropdownSelect
                 name="employeeId"
@@ -116,7 +128,7 @@ export function LeaveRequestForm({
                   label: option.label,
                 }))}
                 placeholder="— Select employee —"
-                ariaInvalid={Boolean(state?.errors?.employeeId)}
+                ariaInvalid={Boolean(visibleState?.errors?.employeeId)}
               />
             </Field>
           )}
@@ -124,7 +136,7 @@ export function LeaveRequestForm({
           <Field
             label="Leave type"
             htmlFor={fieldId("leaveTypeId")}
-            error={state?.errors?.leaveTypeId}
+            error={visibleState?.errors?.leaveTypeId}
           >
             <DropdownSelect
               name="leaveTypeId"
@@ -134,7 +146,7 @@ export function LeaveRequestForm({
                 label: type.name,
               }))}
               placeholder="— Select type —"
-              ariaInvalid={Boolean(state?.errors?.leaveTypeId)}
+              ariaInvalid={Boolean(visibleState?.errors?.leaveTypeId)}
             />
           </Field>
 
@@ -142,7 +154,7 @@ export function LeaveRequestForm({
             <Field
               label="Start date"
               htmlFor={fieldId("startDate")}
-              error={state?.errors?.startDate}
+              error={visibleState?.errors?.startDate}
             >
               <DatePicker
                 id={fieldId("startDate")}
@@ -150,14 +162,14 @@ export function LeaveRequestForm({
                 value={startDate}
                 onValueChange={(value) => setStartDate(value ?? "")}
                 placeholder="Pick a date"
-                invalid={Boolean(state?.errors?.startDate)}
+                invalid={Boolean(visibleState?.errors?.startDate)}
               />
             </Field>
 
             <Field
               label="End date"
               htmlFor={fieldId("endDate")}
-              error={state?.errors?.endDate}
+              error={visibleState?.errors?.endDate}
             >
               <DatePicker
                 id={fieldId("endDate")}
@@ -165,14 +177,14 @@ export function LeaveRequestForm({
                 value={endDate}
                 onValueChange={(value) => setEndDate(value ?? "")}
                 placeholder="Pick a date"
-                invalid={Boolean(state?.errors?.endDate)}
+                invalid={Boolean(visibleState?.errors?.endDate)}
               />
             </Field>
 
             <Field
               label="Days"
               htmlFor={fieldId("days")}
-              error={state?.errors?.days}
+              error={visibleState?.errors?.days}
             >
               <Input
                 id={fieldId("days")}
@@ -182,7 +194,7 @@ export function LeaveRequestForm({
                 placeholder="—"
                 readOnly
                 aria-readonly
-                aria-invalid={Boolean(state?.errors?.days)}
+                aria-invalid={Boolean(visibleState?.errors?.days)}
               />
             </Field>
           </div>
@@ -190,16 +202,16 @@ export function LeaveRequestForm({
           <Field
             label="Reason"
             htmlFor={fieldId("reason")}
-            error={state?.errors?.reason}
+            error={visibleState?.errors?.reason}
           >
             <Textarea
               id={fieldId("reason")}
               name="reason"
-              aria-invalid={Boolean(state?.errors?.reason)}
+              aria-invalid={Boolean(visibleState?.errors?.reason)}
             />
           </Field>
 
-          <FormFeedback state={state} />
+          <FormFeedback state={visibleState} />
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>

@@ -26,6 +26,7 @@ export function DropdownSelect({
   onValueChange,
   options,
   placeholder = "Select an option",
+  unavailableLabel = "Unavailable selection",
   id,
   ariaLabel,
   ariaInvalid = false,
@@ -40,6 +41,7 @@ export function DropdownSelect({
   onValueChange?: (value: string) => void;
   options: DropdownSelectOption[];
   placeholder?: string;
+  unavailableLabel?: string;
   id?: string;
   ariaLabel?: string;
   ariaInvalid?: boolean;
@@ -53,7 +55,22 @@ export function DropdownSelect({
     value ?? defaultValue ?? ""
   );
   const currentValue = value ?? internalValue;
-  const selected = options.find((option) => option.value === currentValue);
+  const missingCurrent =
+    currentValue !== "" &&
+    !options.some((option) => option.value === currentValue);
+  const effectiveOptions = missingCurrent
+    ? [
+        {
+          value: currentValue,
+          label: unavailableLabel,
+          disabled: true,
+        },
+        ...options,
+      ]
+    : options;
+  const selected = effectiveOptions.find(
+    (option) => option.value === currentValue
+  );
 
   function select(next: string) {
     if (value === undefined) {
@@ -89,11 +106,11 @@ export function DropdownSelect({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className={contentClassName}>
-          {options.length === 0 ? (
+          {effectiveOptions.length === 0 ? (
             <DropdownMenuItem disabled>No options</DropdownMenuItem>
           ) : (
             <DropdownMenuRadioGroup value={currentValue} onValueChange={select}>
-              {options.map((option) => (
+              {effectiveOptions.map((option) => (
                 <DropdownMenuRadioItem
                   key={option.value}
                   value={option.value}

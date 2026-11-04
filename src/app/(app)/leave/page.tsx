@@ -39,13 +39,17 @@ async function Content() {
   const myEmployeeId = await getMyEmployeeId(user.id);
   const currentYear = new Date().getFullYear();
 
+  const requestsPromise = manage
+    ? listLeaveRequests()
+    : myEmployeeId
+      ? approveAll
+        ? listLeaveRequests({ managerEmployeeId: myEmployeeId })
+        : listLeaveRequests({ employeeId: myEmployeeId })
+      : Promise.resolve([]);
+
   const [leaveTypes, requests, employees, balances] = await Promise.all([
     listLeaveTypes(),
-    approveAll
-      ? listLeaveRequests()
-      : myEmployeeId
-        ? listLeaveRequests(myEmployeeId)
-        : Promise.resolve([]),
+    requestsPromise,
     manage ? listEmployeeOptions() : Promise.resolve([]),
     myEmployeeId
       ? getLeaveBalances(myEmployeeId, currentYear)
@@ -65,7 +69,7 @@ async function Content() {
             {manage
               ? "File requests for anyone and approve or reject pending ones."
               : approveAll
-                ? "Pending requests you can approve or reject."
+                ? "Your own requests plus requests from your direct reports."
                 : "Your own leave requests."}
           </p>
         </div>

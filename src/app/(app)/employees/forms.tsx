@@ -90,16 +90,19 @@ export function EmployeeForm({
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
   const [employeeNo, setEmployeeNo] = useState(employee?.employeeNo ?? "");
+  const [visibleState, setVisibleState] = useState<ActionState>(undefined);
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
       setEmployeeNo(employee?.employeeNo ?? "");
+      setVisibleState(undefined);
     }
     setOpen(next);
   };
-  const [state, action, pending] = useActionState<ActionState, FormData>(
+  const [, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await saveEmployee(previous, formData);
+      setVisibleState(next);
       if (next?.success) {
         setOpen(false);
         toast.success(employee ? "Employee updated" : "Employee added");
@@ -114,7 +117,7 @@ export function EmployeeForm({
   );
   const uid = useId();
   const fieldId = (name: string) => `${uid}-${name}`;
-  const errors = state?.errors;
+  const errors = visibleState?.errors;
   const invalid = (name: keyof NonNullable<typeof errors>) =>
     Boolean(errors?.[name]);
 
@@ -372,7 +375,7 @@ export function EmployeeForm({
             />
           </Field>
 
-          <FormFeedback state={state} />
+          <FormFeedback state={visibleState} />
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>

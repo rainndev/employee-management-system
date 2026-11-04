@@ -9,7 +9,7 @@ import {
   ClockIcon,
   EyeIcon,
   MessageSquareTextIcon,
-  Trash2Icon,
+  BanIcon,
   UserCheckIcon,
   XIcon,
 } from "lucide-react";
@@ -36,12 +36,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { DateRange } from "@/components/date-range";
 import { StatusBadge } from "@/components/status-badge";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { cn } from "@/lib/utils";
-import {
-  decideLeave,
-  deleteLeave,
-  type LeaveActionResult,
-} from "./actions";
+import { cancelLeave, decideLeave, type LeaveActionResult } from "./actions";
 
 function DetailItem({
   icon,
@@ -76,13 +73,14 @@ function DetailItem({
 export function LeaveDetailsDialog({
   request,
   canDecide,
-  canDelete,
+  canCancel,
 }: {
   request: LeaveRequestItem;
   canDecide: boolean;
-  canDelete: boolean;
+  canCancel: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const showDecision = canDecide && request.status === "pending";
 
@@ -102,6 +100,7 @@ export function LeaveDetailsDialog({
 
         toast.success(success);
         setOpen(false);
+        setConfirmOpen(false);
       } catch {
         toast.error(error);
       }
@@ -109,128 +108,154 @@ export function LeaveDetailsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="View leave request details"
-          title="View details"
-        >
-          <EyeIcon />
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Leave request details</DialogTitle>
-          <DialogDescription>
-            {request.employeeName} · {request.employeeNo}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{request.leaveType}</Badge>
-          <StatusBadge status={request.status} />
-        </div>
-
-        <Separator />
-
-        <ItemGroup className="gap-2">
-          <DetailItem icon={<CalendarRangeIcon />} label="Dates">
-            <DateRange
-              start={request.startDate}
-              end={request.endDate}
-              layout="inline"
-            />
-          </DetailItem>
-
-          <DetailItem icon={<ClockIcon />} label="Days">
-            {request.days}
-          </DetailItem>
-
-          <DetailItem icon={<UserCheckIcon />} label="Approver">
-            {request.approverName ?? "—"}
-          </DetailItem>
-
-          <DetailItem icon={<CalendarClockIcon />} label="Requested at">
-            {request.createdAt}
-          </DetailItem>
-
-          {request.decidedAt && (
-            <DetailItem icon={<CircleCheckIcon />} label="Decided at">
-              {request.decidedAt}
-            </DetailItem>
-          )}
-
-          <DetailItem
-            icon={<MessageSquareTextIcon />}
-            label="Reason"
-            valueClassName="font-normal whitespace-pre-wrap"
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="View leave request details"
+            title="View details"
           >
-            {request.reason || "—"}
-          </DetailItem>
-        </ItemGroup>
+            <EyeIcon />
+          </Button>
+        </DialogTrigger>
 
-        <DialogFooter className="sm:justify-between">
-          <div>
-            {canDelete && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                disabled={pending}
-                onClick={() =>
-                  run(
-                    () => deleteLeave(request.id),
-                    "Leave request deleted",
-                    "Could not delete the request."
-                  )
-                }
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Leave request details</DialogTitle>
+            <DialogDescription>
+              {request.employeeName} · {request.employeeNo}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{request.leaveType}</Badge>
+            <StatusBadge status={request.status} />
+          </div>
+
+          <Separator />
+
+          <ItemGroup className="gap-2">
+            <DetailItem icon={<CalendarRangeIcon />} label="Dates">
+              <DateRange
+                start={request.startDate}
+                end={request.endDate}
+                layout="inline"
+              />
+            </DetailItem>
+
+            <DetailItem icon={<ClockIcon />} label="Days">
+              {request.days}
+            </DetailItem>
+
+            <DetailItem icon={<UserCheckIcon />} label="Approver">
+              {request.approverName ?? "—"}
+            </DetailItem>
+
+            <DetailItem icon={<CalendarClockIcon />} label="Requested at">
+              {request.createdAt}
+            </DetailItem>
+
+            {request.decidedAt && (
+              <DetailItem icon={<CircleCheckIcon />} label="Decided at">
+                {request.decidedAt}
+              </DetailItem>
+            )}
+
+            <DetailItem
+              icon={<MessageSquareTextIcon />}
+              label="Reason"
+              valueClassName="font-normal whitespace-pre-wrap"
+            >
+              {request.reason || "—"}
+            </DetailItem>
+
+            {request.remark && (
+              <DetailItem
+                icon={<MessageSquareTextIcon />}
+                label="Remark"
+                valueClassName="font-normal whitespace-pre-wrap"
               >
-                <Trash2Icon />
-                Delete
-              </Button>
+                {request.remark}
+              </DetailItem>
             )}
-          </div>
+          </ItemGroup>
 
-          <div className="flex gap-2">
-            {showDecision && (
-              <>
+          <DialogFooter className="sm:justify-between">
+            <div>
+              {canCancel && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
                   disabled={pending}
-                  onClick={() =>
-                    run(
-                      () => decideLeave(request.id, "rejected"),
-                      "Leave request rejected",
-                      "Could not update the request."
-                    )
-                  }
+                  onClick={() => setConfirmOpen(true)}
                 >
-                  <XIcon />
-                  Reject
+                  <BanIcon />
+                  Cancel request
                 </Button>
-                <Button
-                  type="button"
-                  disabled={pending}
-                  onClick={() =>
-                    run(
-                      () => decideLeave(request.id, "approved"),
-                      "Leave request approved",
-                      "Could not update the request."
-                    )
-                  }
-                >
-                  <CheckIcon />
-                  Approve
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              {showDecision && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() =>
+                      run(
+                        () => decideLeave(request.id, "rejected"),
+                        "Leave request rejected",
+                        "Could not update the request."
+                      )
+                    }
+                  >
+                    <XIcon />
+                    Reject
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={pending}
+                    onClick={() =>
+                      run(
+                        () => decideLeave(request.id, "approved"),
+                        "Leave request approved",
+                        "Could not update the request."
+                      )
+                    }
+                  >
+                    <CheckIcon />
+                    Approve
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Cancel this leave request?"
+        description={
+          request.status === "approved"
+            ? "The approved days will be returned to the employee's balance. This cannot be undone."
+            : "This will mark the request as cancelled. This cannot be undone."
+        }
+        confirmLabel="Cancel request"
+        pending={pending}
+        onConfirm={() =>
+          run(
+            () => cancelLeave(request.id),
+            "Leave request cancelled",
+            "Could not cancel the request."
+          )
+        }
+      />
+    </>
   );
 }

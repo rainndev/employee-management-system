@@ -12,6 +12,7 @@ const TITLES: Record<string, string> = {
   "/positions": "Positions",
   "/leave": "Leave requests",
   "/admin": "Admin",
+  "/account": "Account",
 };
 
 export function SiteHeader() {

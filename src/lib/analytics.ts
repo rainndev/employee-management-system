@@ -96,7 +96,9 @@ async function getManagerStats(userId: string): Promise<Stat[]> {
   }>(
     `SELECT
        (SELECT count(*) FROM employee
-        WHERE deleted_at IS NULL AND manager_id = $1)::int AS team,
+        WHERE deleted_at IS NULL
+          AND status IN ('active', 'on_leave')
+          AND manager_id = $1)::int AS team,
        (SELECT count(*) FROM leave_request lr
         JOIN employee e ON e.id = lr.employee_id
         WHERE e.manager_id = $1 AND lr.status = 'pending')::int AS pending_leave,

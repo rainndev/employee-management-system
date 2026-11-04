@@ -53,7 +53,7 @@ async function DashboardContent() {
   if (user.role === "employee") {
     const employeeId = await getMyEmployeeId(user.id);
     myLeaveLinked = employeeId !== null;
-    myLeave = employeeId ? await listLeaveRequests(employeeId) : [];
+    myLeave = employeeId ? await listLeaveRequests({ employeeId }) : [];
   }
 
   const links: { href: string; label: string; hint: string }[] = [

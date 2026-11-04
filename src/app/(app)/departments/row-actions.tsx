@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteDepartment } from "./actions";
 import { DepartmentForm } from "./forms";
 
@@ -21,6 +22,7 @@ export function DepartmentRowActions({
   department: Department;
 }) {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -44,22 +46,40 @@ export function DepartmentRowActions({
           <DropdownMenuItem
             variant="destructive"
             disabled={pending}
-            onSelect={() =>
-              startTransition(async () => {
-                try {
-                  await deleteDepartment(department.id);
-                  toast.success("Department deleted");
-                } catch {
-                  toast.error("Could not delete the department.");
-                }
-              })
-            }
+            onSelect={() => setConfirmOpen(true)}
           >
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete this department?"
+        description={
+          <>
+            {department.name} will be removed. Employees currently assigned to
+            it will become unassigned.
+          </>
+        }
+        confirmLabel="Delete department"
+        pending={pending}
+        onConfirm={() =>
+          startTransition(async () => {
+            const result = await deleteDepartment(department.id);
+
+            if (!result.success) {
+              toast.error(result.message ?? "Could not delete the department.");
+              return;
+            }
+
+            toast.success(result.message ?? "Department deleted");
+            setConfirmOpen(false);
+          })
+        }
+      />
 
       <DepartmentForm
         department={department}

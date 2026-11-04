@@ -109,7 +109,13 @@ function RoleDropdown({
 
     startTransition(async () => {
       try {
-        await setUserRole(user.id, value);
+        const result = await setUserRole(user.id, value);
+
+        if (!result.success) {
+          toast.error(result.message ?? "Could not update the role.");
+          return;
+        }
+
         toast.success(`Role changed to ${value}`);
       } catch {
         toast.error("Could not update the role.");
@@ -160,7 +166,13 @@ function ActiveDropdown({
   function changeActive(value: string) {
     startTransition(async () => {
       try {
-        await setUserActive(user.id, value === "true");
+        const result = await setUserActive(user.id, value === "true");
+
+        if (!result.success) {
+          toast.error(result.message ?? "Could not update the account.");
+          return;
+        }
+
         toast.success(
           value === "true" ? "Account enabled" : "Account disabled"
         );

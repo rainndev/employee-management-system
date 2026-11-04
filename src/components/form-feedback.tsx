@@ -8,7 +8,11 @@ export function FieldError({ messages }: { messages?: string[] }) {
     return null;
   }
 
-  return <p className="text-sm text-destructive">{messages[0]}</p>;
+  return (
+    <p role="alert" className="text-sm text-destructive">
+      {messages[0]}
+    </p>
+  );
 }
 
 export function FormFeedback({ state }: { state: FeedbackState }) {
@@ -18,7 +22,7 @@ export function FormFeedback({ state }: { state: FeedbackState }) {
 
   if (state.message) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" aria-live="polite">
         <AlertCircleIcon />
         <AlertDescription>{state.message}</AlertDescription>
       </Alert>
@@ -26,7 +30,7 @@ export function FormFeedback({ state }: { state: FeedbackState }) {
   }
 
   return (
-    <Alert>
+    <Alert aria-live="polite">
       <CheckCircle2Icon />
       <AlertDescription>Saved.</AlertDescription>
     </Alert>

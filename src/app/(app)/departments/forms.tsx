@@ -34,9 +34,11 @@ export function DepartmentForm({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
-  const [state, action, pending] = useActionState<ActionState, FormData>(
+  const [visibleState, setVisibleState] = useState<ActionState>(undefined);
+  const [, action, pending] = useActionState<ActionState, FormData>(
     async (previous, formData) => {
       const next = await saveDepartment(previous, formData);
+      setVisibleState(next);
       if (next?.success) {
         setOpen(false);
         toast.success(department ? "Department updated" : "Department created");
@@ -52,8 +54,16 @@ export function DepartmentForm({
   const nameId = useId();
   const descriptionId = useId();
 
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setVisibleState(undefined);
+    }
+
+    setOpen(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button
@@ -86,9 +96,9 @@ export function DepartmentForm({
               id={nameId}
               name="name"
               defaultValue={department?.name}
-              aria-invalid={Boolean(state?.errors?.name)}
+              aria-invalid={Boolean(visibleState?.errors?.name)}
             />
-            <FieldError messages={state?.errors?.name} />
+            <FieldError messages={visibleState?.errors?.name} />
           </div>
 
           <div className="grid gap-2">
@@ -97,12 +107,12 @@ export function DepartmentForm({
               id={descriptionId}
               name="description"
               defaultValue={department?.description ?? ""}
-              aria-invalid={Boolean(state?.errors?.description)}
+              aria-invalid={Boolean(visibleState?.errors?.description)}
             />
-            <FieldError messages={state?.errors?.description} />
+            <FieldError messages={visibleState?.errors?.description} />
           </div>
 
-          <FormFeedback state={state} />
+          <FormFeedback state={visibleState} />
 
           <DialogFooter>
             <Button type="submit" disabled={pending}>

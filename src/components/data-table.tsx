@@ -154,7 +154,7 @@ export function DataTable<T extends RowData>({
           />
         </div>
 
-        {filters.length > 0 && (
+        {(filters.length > 0 || hasActiveQuery) && (
           <div className="flex flex-wrap items-center gap-2">
             {filters.map((filter) => (
               <DropdownSelect

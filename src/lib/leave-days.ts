@@ -8,7 +8,18 @@ function parseISODate(value: string) {
   }
 
   const date = new Date(year, month - 1, day);
-  return isValid(date) ? date : undefined;
+
+  // Reject overflowing dates such as 2026-02-31 (which JS would roll into March).
+  if (
+    !isValid(date) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return undefined;
+  }
+
+  return date;
 }
 
 // Inclusive calendar-day count between two ISO dates. Returns 0 for missing or

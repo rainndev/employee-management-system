@@ -19,8 +19,6 @@ export type AdminUserRow = {
   createdAt: string;
 };
 
-const USER_LIST_LIMIT = 100;
-
 export async function getAdminStats(): Promise<AdminStats> {
   const { rows } = await pool.query<{
     employees: number;
@@ -54,10 +52,15 @@ export async function listUsers(): Promise<AdminUserRow[]> {
     email: string;
     role: string;
     is_active: boolean;
-    created_at: Date;
+    created_at: string;
   }>(
-    'SELECT id, email, role, is_active, created_at FROM "user" ORDER BY created_at DESC LIMIT $1',
-    [USER_LIST_LIMIT]
+    `SELECT id,
+            email,
+            role,
+            is_active,
+            to_char(created_at, 'YYYY-MM-DD') AS created_at
+     FROM "user"
+     ORDER BY created_at DESC`
   );
 
   return rows.map((row) => ({
@@ -65,7 +68,7 @@ export async function listUsers(): Promise<AdminUserRow[]> {
     email: row.email,
     role: row.role as Role,
     isActive: row.is_active,
-    createdAt: row.created_at.toISOString().slice(0, 10),
+    createdAt: row.created_at,
   }));
 }
 

@@ -71,7 +71,7 @@ async function AdminContent() {
           <p className="text-sm text-muted-foreground">
             Admins can change roles, disable accounts, and set a new password
             for a user. Share a reset password with the user directly. You
-            cannot edit your own row.
+            cannot edit your own row; use Account to change your own password.
           </p>
         </div>
         <UsersTable users={users} currentUserId={admin.id} />

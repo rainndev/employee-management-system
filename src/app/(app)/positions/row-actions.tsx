@@ -12,11 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deletePosition } from "./actions";
 import { PositionForm } from "./forms";
 
 export function PositionRowActions({ position }: { position: Position }) {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -36,22 +38,40 @@ export function PositionRowActions({ position }: { position: Position }) {
           <DropdownMenuItem
             variant="destructive"
             disabled={pending}
-            onSelect={() =>
-              startTransition(async () => {
-                try {
-                  await deletePosition(position.id);
-                  toast.success("Position deleted");
-                } catch {
-                  toast.error("Could not delete the position.");
-                }
-              })
-            }
+            onSelect={() => setConfirmOpen(true)}
           >
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete this position?"
+        description={
+          <>
+            {position.title} will be removed. Employees currently assigned to it
+            will become unassigned.
+          </>
+        }
+        confirmLabel="Delete position"
+        pending={pending}
+        onConfirm={() =>
+          startTransition(async () => {
+            const result = await deletePosition(position.id);
+
+            if (!result.success) {
+              toast.error(result.message ?? "Could not delete the position.");
+              return;
+            }
+
+            toast.success(result.message ?? "Position deleted");
+            setConfirmOpen(false);
+          })
+        }
+      />
 
       <PositionForm
         position={position}

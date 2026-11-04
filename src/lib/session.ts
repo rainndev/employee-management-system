@@ -2,17 +2,21 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { env } from "@/lib/env";
 
 const COOKIE_NAME = "session";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-const encodedKey = new TextEncoder().encode(process.env.SESSION_SECRET);
+const encodedKey = new TextEncoder().encode(env.SESSION_SECRET);
 
-// Only the user id lives in the token. The role is read from the database on
-// every request, so a role change takes effect immediately instead of lingering
-// in the cookie until it expires.
+// Only the user id and session version live in the token. The role is read from
+// the database on every request, so a role change takes effect immediately
+// instead of lingering in the cookie until it expires. Bumping
+// "user".session_version invalidates every JWT issued before it (password
+// changes/resets), without needing server-side session storage.
 type SessionPayload = {
   userId: string;
+  version: number;
 };
 
 async function encrypt(payload: SessionPayload) {
@@ -33,19 +37,22 @@ async function decrypt(session: string | undefined = "") {
       algorithms: ["HS256"],
     });
 
-    if (typeof payload.userId !== "string") {
+    if (
+      typeof payload.userId !== "string" ||
+      typeof payload.version !== "number"
+    ) {
       return null;
     }
 
-    return { userId: payload.userId };
+    return { userId: payload.userId, version: payload.version };
   } catch {
     return null;
   }
 }
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, version: number) {
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  const session = await encrypt({ userId });
+  const session = await encrypt({ userId, version });
   const cookieStore = await cookies();
 
   cookieStore.set(COOKIE_NAME, session, {

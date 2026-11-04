@@ -85,6 +85,7 @@ export function AppSidebar({
       : [];
 
   const quickCreateHref = manage ? "/employees" : "/leave";
+  const quickCreateLabel = manage ? "Add employee" : "Leave request";
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -116,7 +117,7 @@ export function AppSidebar({
                   <span className="flex size-4 items-center justify-center rounded-full bg-primary-foreground text-primary">
                     <PlusIcon className="size-2" strokeWidth={3} />
                   </span>
-                  <span className="truncate">Leave Request</span>
+                  <span className="truncate">{quickCreateLabel}</span>
                 </Link>
               </Button>
 

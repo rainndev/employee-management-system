@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteEmployee } from "./actions";
 import { EmployeeForm } from "./forms";
 
@@ -29,6 +30,7 @@ export function EmployeeRowActions({
   users: Option[];
 }) {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -48,22 +50,41 @@ export function EmployeeRowActions({
           <DropdownMenuItem
             variant="destructive"
             disabled={pending}
-            onSelect={() =>
-              startTransition(async () => {
-                try {
-                  await deleteEmployee(employee.id);
-                  toast.success("Employee deleted");
-                } catch {
-                  toast.error("Could not delete the employee.");
-                }
-              })
-            }
+            onSelect={() => setConfirmOpen(true)}
           >
             <Trash2Icon />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete this employee?"
+        description={
+          <>
+            {employee.name} ({employee.employeeNo}) will be removed from the
+            directory. Their linked account will be disabled, pending leave will
+            be cancelled, and direct reports will be unassigned.
+          </>
+        }
+        confirmLabel="Delete employee"
+        pending={pending}
+        onConfirm={() =>
+          startTransition(async () => {
+            const result = await deleteEmployee(employee.id);
+
+            if (!result.success) {
+              toast.error(result.message ?? "Could not delete the employee.");
+              return;
+            }
+
+            toast.success("Employee deleted");
+            setConfirmOpen(false);
+          })
+        }
+      />
 
       <EmployeeForm
         employee={employee}

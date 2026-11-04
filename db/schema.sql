@@ -6,8 +6,9 @@
 --   1. Connect to your database, right-click the DB -> Query Tool
 --   2. Paste this whole file, press F5 (Execute)
 --
--- Existing database? Run db/migrations/001_add_timestamps.sql first, because
--- CREATE TABLE IF NOT EXISTS does not add new columns to existing tables.
+-- Existing database? Run every file in db/migrations/ in order (or
+-- `pnpm db:migrate`), because CREATE TABLE IF NOT EXISTS does not add new
+-- columns or replace constraints on existing tables.
 --
 -- Requires PostgreSQL 13+ (gen_random_uuid() is built into core).
 -- Note: "user" is a reserved keyword, so it must always be double-quoted.
@@ -43,9 +44,10 @@ CREATE TABLE IF NOT EXISTS department (
     deleted_at  timestamptz
 );
 
--- Name must be unique among non-deleted rows (soft delete friendly).
+-- Name must be unique among non-deleted rows (soft delete friendly), ignoring
+-- case so "Sales" and "sales" cannot both exist.
 CREATE UNIQUE INDEX IF NOT EXISTS department_name_active_key
-    ON department (name) WHERE deleted_at IS NULL;
+    ON department (lower(name)) WHERE deleted_at IS NULL;
 
 -- ----------------------------------------------------------------------------
 -- POSITION
@@ -60,7 +62,7 @@ CREATE TABLE IF NOT EXISTS position (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS position_title_active_key
-    ON position (title) WHERE deleted_at IS NULL;
+    ON position (lower(title)) WHERE deleted_at IS NULL;
 
 -- ----------------------------------------------------------------------------
 -- "user"
@@ -69,14 +71,19 @@ CREATE TABLE IF NOT EXISTS "user" (
     id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     email         text NOT NULL,
     password_hash text NOT NULL,
-    role          text NOT NULL DEFAULT 'employee',
-    is_active     boolean NOT NULL DEFAULT true,
-    created_at    timestamptz NOT NULL DEFAULT now(),
-    updated_at    timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT user_email_key UNIQUE (email),
+    role            text NOT NULL DEFAULT 'employee',
+    is_active       boolean NOT NULL DEFAULT true,
+    -- Bumped when a password is changed/reset so existing JWTs are rejected.
+    session_version integer NOT NULL DEFAULT 0,
+    created_at      timestamptz NOT NULL DEFAULT now(),
+    updated_at      timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT user_role_check
         CHECK (role IN ('admin', 'hr', 'manager', 'employee'))
 );
+
+-- Emails are stored lower-cased by the app; enforce that at the database too.
+CREATE UNIQUE INDEX IF NOT EXISTS user_email_lower_key
+    ON "user" (lower(email));
 
 -- ----------------------------------------------------------------------------
 -- LEAVE_TYPE
@@ -113,13 +120,18 @@ CREATE TABLE IF NOT EXISTS employee (
     created_at    timestamptz NOT NULL DEFAULT now(),
     updated_at    timestamptz NOT NULL DEFAULT now(),
     deleted_at    timestamptz,
-    CONSTRAINT employee_no_key UNIQUE (employee_no),
-    CONSTRAINT employee_user_id_key UNIQUE (user_id),
     CONSTRAINT employee_gender_check
         CHECK (gender IS NULL OR gender IN ('male', 'female', 'other')),
     CONSTRAINT employee_status_check
         CHECK (status IN ('active', 'inactive', 'terminated', 'on_leave'))
 );
+
+-- Uniqueness applies only to active (non-deleted) employees, so soft-deleted
+-- employee numbers and linked accounts can be reused.
+CREATE UNIQUE INDEX IF NOT EXISTS employee_no_active_key
+    ON employee (lower(employee_no)) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS employee_user_id_active_key
+    ON employee (user_id) WHERE deleted_at IS NULL AND user_id IS NOT NULL;
 
 -- ----------------------------------------------------------------------------
 -- ATTENDANCE
@@ -161,7 +173,8 @@ CREATE TABLE IF NOT EXISTS leave_request (
     CONSTRAINT leave_request_status_check
         CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
     CONSTRAINT leave_request_dates_check CHECK (end_date >= start_date),
-    CONSTRAINT leave_request_days_check CHECK (days > 0),
+    CONSTRAINT leave_request_days_check
+        CHECK (days >= 0.5 AND days <= (end_date - start_date + 1)),
     -- One employee cannot hold two pending/approved requests over the same day.
     CONSTRAINT leave_request_no_overlap
         EXCLUDE USING gist (
@@ -189,6 +202,19 @@ CREATE TABLE IF NOT EXISTS leave_balance (
 );
 
 -- ----------------------------------------------------------------------------
+-- AUDIT_LOG
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS audit_log (
+    id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    actor_user_id uuid REFERENCES "user" (id) ON DELETE SET NULL,
+    action        text NOT NULL,
+    entity        text NOT NULL,
+    entity_id     text,
+    details       jsonb,
+    created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+-- ----------------------------------------------------------------------------
 -- Indexes on foreign keys (Postgres does not create these automatically)
 -- ----------------------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS employee_department_id_idx ON employee (department_id);
@@ -199,6 +225,20 @@ CREATE INDEX IF NOT EXISTS leave_request_employee_id_idx   ON leave_request (emp
 CREATE INDEX IF NOT EXISTS leave_request_approver_id_idx   ON leave_request (approver_id);
 CREATE INDEX IF NOT EXISTS leave_request_leave_type_id_idx ON leave_request (leave_type_id);
 CREATE INDEX IF NOT EXISTS leave_balance_employee_id_idx   ON leave_balance (employee_id);
+
+-- Query-shape indexes used by the dashboard/admin/leave lists.
+CREATE INDEX IF NOT EXISTS leave_request_status_start_idx
+    ON leave_request (status, start_date);
+CREATE INDEX IF NOT EXISTS leave_request_employee_status_start_idx
+    ON leave_request (employee_id, status, start_date);
+CREATE INDEX IF NOT EXISTS user_created_at_idx
+    ON "user" (created_at);
+CREATE INDEX IF NOT EXISTS employee_status_active_idx
+    ON employee (status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS audit_log_created_at_idx
+    ON audit_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS audit_log_entity_idx
+    ON audit_log (entity, entity_id);
 
 -- ----------------------------------------------------------------------------
 -- updated_at maintenance

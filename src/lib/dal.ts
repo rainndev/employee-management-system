@@ -20,7 +20,11 @@ export const verifySession = cache(async () => {
     redirect("/login");
   }
 
-  return { isAuth: true as const, userId: session.userId };
+  return {
+    isAuth: true as const,
+    userId: session.userId,
+    version: session.version,
+  };
 });
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -30,15 +34,22 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: string;
     role: string;
     is_active: boolean;
-  }>('SELECT id, email, role, is_active FROM "user" WHERE id = $1', [
-    session.userId,
-  ]);
+    session_version: number;
+  }>(
+    'SELECT id, email, role, is_active, session_version FROM "user" WHERE id = $1',
+    [session.userId]
+  );
 
   const row = rows[0];
 
-  // A deactivated account loses access immediately, without waiting for the
-  // session cookie to expire.
-  if (!row || !row.is_active || !isRole(row.role)) {
+  // A deactivated account, invalid role, or stale token (password changed
+  // elsewhere) loses access immediately, without waiting for cookie expiry.
+  if (
+    !row ||
+    !row.is_active ||
+    !isRole(row.role) ||
+    row.session_version !== session.version
+  ) {
     return null;
   }
 

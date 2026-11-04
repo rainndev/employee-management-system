@@ -28,6 +28,7 @@ function getSearchText(request: LeaveRequestItem) {
     request.status,
     request.approverName,
     request.reason,
+    request.remark,
   ]
     .filter(Boolean)
     .join(" ");
@@ -46,8 +47,6 @@ export function LeaveTable({
   myEmployeeId: string | null;
   leaveTypes: string[];
 }) {
-  const canDecide = approveAll && myEmployeeId !== null;
-
   const columns = useMemo<DataTableColumn<LeaveRequestItem>[]>(() => {
     const result: DataTableColumn<LeaveRequestItem>[] = [];
 
@@ -113,18 +112,23 @@ export function LeaveTable({
         enableSorting: false,
         cell: ({ row }) => {
           const request = row.original;
-          const canDelete =
-            manage ||
-            (myEmployeeId !== null &&
-              request.employeeId === myEmployeeId &&
-              request.status === "pending");
+          const isOwn =
+            myEmployeeId !== null && request.employeeId === myEmployeeId;
+          const canDecide =
+            approveAll &&
+            myEmployeeId !== null &&
+            !isOwn &&
+            (manage || request.managerId === myEmployeeId);
+          const canCancel = manage
+            ? request.status === "pending" || request.status === "approved"
+            : isOwn && request.status === "pending";
 
           return (
             <div className="text-right">
               <LeaveDetailsDialog
                 request={request}
                 canDecide={canDecide}
-                canDelete={canDelete}
+                canCancel={canCancel}
               />
             </div>
           );
@@ -133,7 +137,7 @@ export function LeaveTable({
     );
 
     return result;
-  }, [approveAll, canDecide, manage, myEmployeeId]);
+  }, [approveAll, manage, myEmployeeId]);
 
   const filters = useMemo<DataTableFilter<LeaveRequestItem>[]>(
     () => [

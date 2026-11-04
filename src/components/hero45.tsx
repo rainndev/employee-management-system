@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState, type ElementType } from "react";
+import Image from "next/image";
 import { CalendarCheck2Icon, ShieldCheckIcon, UsersIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -114,22 +115,31 @@ const Hero45 = ({
                   >
                     {heroImage.srcDark ? (
                       <>
-                        <img
+                        <Image
                           src={heroImage.src}
                           alt={heroImage.alt}
-                          className="absolute inset-0 size-full rounded-xl border border-border object-cover object-top dark:hidden"
+                          fill
+                          fetchPriority={i === 0 ? "high" : undefined}
+                          sizes="(min-width: 1024px) 1024px, 100vw"
+                          className="rounded-xl border border-border object-cover object-top dark:hidden"
                         />
-                        <img
+                        <Image
                           src={heroImage.srcDark}
                           alt={heroImage.alt}
-                          className="absolute inset-0 hidden size-full rounded-xl border border-border object-cover object-top dark:block"
+                          fill
+                          fetchPriority={i === 0 ? "high" : undefined}
+                          sizes="(min-width: 1024px) 1024px, 100vw"
+                          className="hidden rounded-xl border border-border object-cover object-top dark:block"
                         />
                       </>
                     ) : (
-                      <img
+                      <Image
                         src={heroImage.src}
                         alt={heroImage.alt}
-                        className="absolute inset-0 size-full rounded-xl border border-border object-cover object-top"
+                        fill
+                        fetchPriority={i === 0 ? "high" : undefined}
+                        sizes="(min-width: 1024px) 1024px, 100vw"
+                        className="rounded-xl border border-border object-cover object-top"
                       />
                     )}
                   </div>

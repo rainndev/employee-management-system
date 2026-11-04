@@ -2,6 +2,9 @@ import "server-only";
 
 import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
+import { recordAudit } from "@/lib/audit";
+import { isWorkingEmployeeStatus } from "@/lib/employee-status";
+import type { Role } from "@/lib/roles";
 
 export type LeaveType = {
   id: string;
@@ -15,12 +18,14 @@ export type LeaveRequestItem = {
   employeeId: string;
   employeeName: string;
   employeeNo: string;
+  managerId: string | null;
   leaveType: string;
   startDate: string;
   endDate: string;
   days: number;
   status: string;
   reason: string | null;
+  remark: string | null;
   approverName: string | null;
   createdAt: string;
   decidedAt: string | null;
@@ -58,6 +63,48 @@ export class InsufficientLeaveBalanceError extends Error {
       } left, but ${formatDays(requested)} requested.`
     );
     this.name = "InsufficientLeaveBalanceError";
+  }
+}
+
+export class LeaveRequestNotFoundError extends Error {
+  constructor() {
+    super("Leave request not found.");
+    this.name = "LeaveRequestNotFoundError";
+  }
+}
+
+export class LeaveRequestNotPendingError extends Error {
+  constructor(message = "This request has already been decided.") {
+    super(message);
+    this.name = "LeaveRequestNotPendingError";
+  }
+}
+
+export class LeaveRequestNotCancellableError extends Error {
+  constructor(message = "Only pending or approved requests can be cancelled.") {
+    super(message);
+    this.name = "LeaveRequestNotCancellableError";
+  }
+}
+
+export class SelfApprovalError extends Error {
+  constructor() {
+    super("You cannot approve or reject your own leave request.");
+    this.name = "SelfApprovalError";
+  }
+}
+
+export class NotTeamMemberError extends Error {
+  constructor() {
+    super("You can only approve leave for your direct reports.");
+    this.name = "NotTeamMemberError";
+  }
+}
+
+export class EmployeeNotEligibleError extends Error {
+  constructor(message = "That employee is not active.") {
+    super(message);
+    this.name = "EmployeeNotEligibleError";
   }
 }
 
@@ -176,24 +223,45 @@ export async function getLeaveBalances(
   });
 }
 
+export type LeaveListScope = {
+  employeeId?: string;
+  // Manager view: the manager's own employee id. Includes their own requests
+  // plus requests from employees who report directly to them.
+  managerEmployeeId?: string;
+};
+
 // JOINs employee, leave_type and the approving employee.
 export async function listLeaveRequests(
-  employeeId?: string
+  scope: LeaveListScope = {}
 ): Promise<LeaveRequestItem[]> {
-  const where = employeeId ? "WHERE lr.employee_id = $1" : "";
-  const params = employeeId ? [employeeId] : [];
+  const clauses: string[] = [];
+  const params: string[] = [];
+
+  if (scope.employeeId) {
+    params.push(scope.employeeId);
+    clauses.push(`lr.employee_id = $${params.length}`);
+  } else if (scope.managerEmployeeId) {
+    params.push(scope.managerEmployeeId);
+    clauses.push(
+      `(lr.employee_id = $${params.length} OR e.manager_id = $${params.length})`
+    );
+  }
+
+  const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
 
   const { rows } = await pool.query<{
     id: string;
     employee_id: string;
     employee_name: string;
     employee_no: string;
+    manager_id: string | null;
     leave_type: string;
     start_date: string;
     end_date: string;
     days: number;
     status: string;
     reason: string | null;
+    remark: string | null;
     approver_name: string | null;
     created_at: string;
     decided_at: string | null;
@@ -202,12 +270,14 @@ export async function listLeaveRequests(
             lr.employee_id,
             e.first_name || ' ' || e.last_name AS employee_name,
             e.employee_no,
+            e.manager_id::text AS manager_id,
             lt.name AS leave_type,
             to_char(lr.start_date, 'YYYY-MM-DD') AS start_date,
             to_char(lr.end_date, 'YYYY-MM-DD') AS end_date,
             lr.days::float8 AS days,
             lr.status,
             lr.reason,
+            lr.remark,
             a.first_name || ' ' || a.last_name AS approver_name,
             to_char(lr.created_at, 'YYYY-MM-DD HH24:MI') AS created_at,
             to_char(lr.decided_at, 'YYYY-MM-DD HH24:MI') AS decided_at
@@ -225,12 +295,14 @@ export async function listLeaveRequests(
     employeeId: row.employee_id,
     employeeName: row.employee_name,
     employeeNo: row.employee_no,
+    managerId: row.manager_id,
     leaveType: row.leave_type,
     startDate: row.start_date,
     endDate: row.end_date,
     days: row.days,
     status: row.status,
     reason: row.reason,
+    remark: row.remark,
     approverName: row.approver_name,
     createdAt: row.created_at,
     decidedAt: row.decided_at,
@@ -241,7 +313,9 @@ export async function getMyEmployeeId(userId: string): Promise<string | null> {
   const { rows } = await pool.query<{ id: string }>(
     `SELECT id
      FROM employee
-     WHERE user_id = $1 AND deleted_at IS NULL`,
+     WHERE user_id = $1
+       AND deleted_at IS NULL
+       AND status IN ('active', 'on_leave')`,
     [userId]
   );
 
@@ -271,10 +345,31 @@ export async function hasOverlappingLeaveRequest(
   return rows[0]?.overlaps ?? false;
 }
 
-export async function createLeaveRequest(input: LeaveRequestInput) {
+export async function createLeaveRequest(
+  input: LeaveRequestInput,
+  actorUserId: string | null
+) {
   const year = Number(input.startDate.slice(0, 4));
 
-  await withTransaction(async (client) => {
+  return withTransaction(async (client) => {
+    const { rows: employeeRows } = await client.query<{
+      status: string;
+    }>(
+      `SELECT status
+       FROM employee
+       WHERE id = $1 AND deleted_at IS NULL
+       FOR UPDATE`,
+      [input.employeeId]
+    );
+
+    const employee = employeeRows[0];
+
+    if (!employee || !isWorkingEmployeeStatus(employee.status)) {
+      throw new EmployeeNotEligibleError(
+        "Leave can only be filed for an active employee."
+      );
+    }
+
     await ensureLeaveBalances(client, input.employeeId, year);
 
     // Lock the balance row so concurrent requests for this employee/type/year
@@ -323,10 +418,11 @@ export async function createLeaveRequest(input: LeaveRequestInput) {
       }
     }
 
-    await client.query(
+    const { rows: inserted } = await client.query<{ id: string }>(
       `INSERT INTO leave_request
          (employee_id, leave_type_id, start_date, end_date, days, reason, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+       RETURNING id`,
       [
         input.employeeId,
         input.leaveTypeId,
@@ -336,6 +432,20 @@ export async function createLeaveRequest(input: LeaveRequestInput) {
         input.reason,
       ]
     );
+
+    await recordAudit(client, {
+      actorUserId,
+      action: "leave.create",
+      entity: "leave_request",
+      entityId: inserted[0].id,
+      details: {
+        employeeId: input.employeeId,
+        leaveTypeId: input.leaveTypeId,
+        days: input.days,
+      },
+    });
+
+    return inserted[0].id;
   });
 }
 
@@ -357,12 +467,17 @@ export async function getLeaveRequest(id: string) {
 export async function setLeaveStatus(
   id: string,
   status: "approved" | "rejected",
-  approverId: string
+  approverId: string,
+  approverRole: Role,
+  actorUserId: string | null
 ) {
-  await withTransaction(async (client) => {
+  return withTransaction(async (client) => {
     const { rows } = await client.query<{
       id: string;
       employee_id: string;
+      manager_id: string | null;
+      employee_status: string;
+      employee_deleted_at: string | null;
       leave_type_id: string;
       days: number;
       year: number;
@@ -372,6 +487,9 @@ export async function setLeaveStatus(
     }>(
       `SELECT lr.id,
               lr.employee_id,
+              e.manager_id::text AS manager_id,
+              e.status AS employee_status,
+              e.deleted_at::text AS employee_deleted_at,
               lr.leave_type_id,
               lr.days::float8 AS days,
               EXTRACT(YEAR FROM lr.start_date)::int AS year,
@@ -379,6 +497,7 @@ export async function setLeaveStatus(
               lt.name AS leave_type,
               lt.is_paid
        FROM leave_request lr
+       JOIN employee e ON e.id = lr.employee_id
        JOIN leave_type lt ON lt.id = lr.leave_type_id
        WHERE lr.id = $1
        FOR UPDATE OF lr`,
@@ -387,8 +506,29 @@ export async function setLeaveStatus(
 
     const request = rows[0];
 
-    if (!request || request.status !== "pending") {
-      return;
+    if (!request) {
+      throw new LeaveRequestNotFoundError();
+    }
+
+    if (request.status !== "pending") {
+      throw new LeaveRequestNotPendingError();
+    }
+
+    if (
+      request.employee_deleted_at ||
+      !isWorkingEmployeeStatus(request.employee_status)
+    ) {
+      throw new EmployeeNotEligibleError(
+        "This request belongs to an employee who is no longer active."
+      );
+    }
+
+    if (request.employee_id === approverId) {
+      throw new SelfApprovalError();
+    }
+
+    if (approverRole === "manager" && request.manager_id !== approverId) {
+      throw new NotTeamMemberError();
     }
 
     if (status === "approved") {
@@ -423,22 +563,43 @@ export async function setLeaveStatus(
           `UPDATE leave_balance
            SET used = used + $1
            WHERE employee_id = $2 AND leave_type_id = $3 AND year = $4`,
-          [request.days, request.employee_id, request.leave_type_id, request.year]
+          [
+            request.days,
+            request.employee_id,
+            request.leave_type_id,
+            request.year,
+          ]
         );
       }
     }
 
-    await client.query(
+    const { rowCount } = await client.query(
       `UPDATE leave_request
        SET status = $1, approver_id = $2, decided_at = now()
        WHERE id = $3 AND status = 'pending'`,
       [status, approverId, id]
     );
+
+    if (!rowCount) {
+      throw new LeaveRequestNotPendingError();
+    }
+
+    await recordAudit(client, {
+      actorUserId,
+      action: status === "approved" ? "leave.approve" : "leave.reject",
+      entity: "leave_request",
+      entityId: id,
+      details: { employeeId: request.employee_id, days: request.days },
+    });
   });
 }
 
-export async function deleteLeaveRequest(id: string) {
-  await withTransaction(async (client) => {
+export async function cancelLeaveRequest(
+  id: string,
+  actorUserId: string | null,
+  reason: string
+) {
+  return withTransaction(async (client) => {
     const { rows } = await client.query<{
       employee_id: string;
       leave_type_id: string;
@@ -460,10 +621,14 @@ export async function deleteLeaveRequest(id: string) {
     const request = rows[0];
 
     if (!request) {
-      return;
+      throw new LeaveRequestNotFoundError();
     }
 
-    // Approved days were counted against the balance; deleting them restores
+    if (request.status !== "pending" && request.status !== "approved") {
+      throw new LeaveRequestNotCancellableError();
+    }
+
+    // Approved days were counted against the balance; cancelling them restores
     // the allowance. Pending days were only reserved and never added to used.
     if (request.status === "approved") {
       await ensureLeaveBalances(client, request.employee_id, request.year);
@@ -475,6 +640,25 @@ export async function deleteLeaveRequest(id: string) {
       );
     }
 
-    await client.query("DELETE FROM leave_request WHERE id = $1", [id]);
+    const { rowCount } = await client.query(
+      `UPDATE leave_request
+       SET status = 'cancelled',
+           decided_at = now(),
+           remark = $2
+       WHERE id = $1 AND status IN ('pending', 'approved')`,
+      [id, reason]
+    );
+
+    if (!rowCount) {
+      throw new LeaveRequestNotCancellableError();
+    }
+
+    await recordAudit(client, {
+      actorUserId,
+      action: "leave.cancel",
+      entity: "leave_request",
+      entityId: id,
+      details: { employeeId: request.employee_id, days: request.days },
+    });
   });
 }

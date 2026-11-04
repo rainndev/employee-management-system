@@ -35,8 +35,8 @@ async function Content() {
   const [employees, departments, positions, managers, users] =
     await Promise.all([
       listEmployees(),
-      manage ? listDepartments() : Promise.resolve([]),
-      manage ? listPositions() : Promise.resolve([]),
+      listDepartments(),
+      listPositions(),
       manage ? listManagerOptions() : Promise.resolve([]),
       manage ? listUserOptions() : Promise.resolve([]),
     ]);
