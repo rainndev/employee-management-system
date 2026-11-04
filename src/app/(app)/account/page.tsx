@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function AccountPage() {
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+    <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6 lg:p-8">
       <Suspense
         fallback={<p className="text-sm text-muted-foreground">Loading...</p>}
       >
@@ -30,15 +30,17 @@ async function Content() {
   const user = await requireUser();
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+          Account
+        </h1>
+        <p className="mt-1 text-sm break-words text-muted-foreground">
           Signed in as {user.email}
         </p>
       </div>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Change password</CardTitle>
           <CardDescription>

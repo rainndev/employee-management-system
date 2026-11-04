@@ -1,13 +1,58 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { toast } from "sonner";
 import type { AccountPasswordState } from "@/lib/definitions";
 import { changePassword } from "./actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { FieldError, FormFeedback } from "@/components/form-feedback";
+
+function PasswordInput({
+  id,
+  name,
+  label,
+  autoComplete,
+  invalid,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  autoComplete: string;
+  invalid: boolean;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <InputGroup className="h-10 w-full">
+      <InputGroupInput
+        id={id}
+        name={name}
+        type={visible ? "text" : "password"}
+        autoComplete={autoComplete}
+        aria-invalid={invalid}
+      />
+      <InputGroupAddon align="inline-end">
+        <InputGroupButton
+          size="icon-sm"
+          aria-label={visible ? `Hide ${label}` : `Show ${label}`}
+          aria-pressed={visible}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => setVisible((current) => !current)}
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </InputGroupButton>
+      </InputGroupAddon>
+    </InputGroup>
+  );
+}
 
 function Field({
   label,
@@ -50,18 +95,18 @@ export function ChangePasswordForm() {
   const fieldId = (name: string) => `${uid}-${name}`;
 
   return (
-    <form action={action} className="flex max-w-md flex-col gap-4">
+    <form action={action} className="flex w-full max-w-md flex-col gap-4">
       <Field
         label="Current password"
         htmlFor={fieldId("currentPassword")}
         error={state?.errors?.currentPassword}
       >
-        <Input
+        <PasswordInput
           id={fieldId("currentPassword")}
           name="currentPassword"
-          type="password"
+          label="current password"
           autoComplete="current-password"
-          aria-invalid={Boolean(state?.errors?.currentPassword)}
+          invalid={Boolean(state?.errors?.currentPassword)}
         />
       </Field>
 
@@ -70,12 +115,12 @@ export function ChangePasswordForm() {
         htmlFor={fieldId("password")}
         error={state?.errors?.password}
       >
-        <Input
+        <PasswordInput
           id={fieldId("password")}
           name="password"
-          type="password"
+          label="new password"
           autoComplete="new-password"
-          aria-invalid={Boolean(state?.errors?.password)}
+          invalid={Boolean(state?.errors?.password)}
         />
       </Field>
 
@@ -84,12 +129,12 @@ export function ChangePasswordForm() {
         htmlFor={fieldId("confirmPassword")}
         error={state?.errors?.confirmPassword}
       >
-        <Input
+        <PasswordInput
           id={fieldId("confirmPassword")}
           name="confirmPassword"
-          type="password"
+          label="confirm password"
           autoComplete="new-password"
-          aria-invalid={Boolean(state?.errors?.confirmPassword)}
+          invalid={Boolean(state?.errors?.confirmPassword)}
         />
       </Field>
 
@@ -107,7 +152,7 @@ export function ChangePasswordForm() {
       {!state?.success && <FormFeedback state={state} />}
 
       <div>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           {pending ? "Updating..." : "Update password"}
         </Button>
       </div>
