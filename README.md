@@ -28,7 +28,7 @@ Forms use shadcn `Input`, `Textarea` and `Select`. Radix `Select` renders a hidd
 
 ## 1. Create the database and tables
 
-> **Already have these tables?** Run every file in `db/migrations/` in order (or `pnpm db:migrate`). The migrations add timestamps, the leave-overlap constraint, leave balances, case-insensitive identity indexes, `session_version`, the audit log, and the soft-delete-friendly employee indexes. Then jump to step 2.
+> **Already have these tables?** Run every file in `db/migrations/` in order (or `pnpm db:migrate`). The migrations add timestamps, the leave-overlap constraint, leave balances, case-insensitive identity indexes, `session_version`, the audit log, the soft-delete-friendly employee indexes, and the past-date leave guard. Then jump to step 2.
 
 Open **pgAdmin 4** and connect to your PostgreSQL server.
 
@@ -111,7 +111,7 @@ Admins and managers also get a **Joined users** area chart under the cards — d
 
 ### Leave requests need an employee record
 
-`leave_request.approver_id` and `leave_request.employee_id` reference `employee(id)`. An account can only file leave (or approve it) when `employee.user_id` points at that account. Link a user to an employee from **Employees → Add employee → Linked user account**, or approve requests without that constraint by linking the approver too.
+Leave requests cannot start before the current business day (`Asia/Kuala_Lumpur`); this is enforced in the form, the Server Action, and a database trigger. `leave_request.approver_id` and `leave_request.employee_id` reference `employee(id)`. An account can only file leave (or approve it) when `employee.user_id` points at that account. Link a user to an employee from **Employees → Add employee → Linked user account**, or approve requests without that constraint by linking the approver too.
 
 ## SQL coverage
 

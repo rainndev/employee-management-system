@@ -5,13 +5,14 @@ import {
   EmployeeSchema,
   LeaveRequestSchema,
   SignupFormSchema,
+  todayInCompanyTimeZone,
 } from "../src/lib/definitions.ts";
 
 const leaveBase = {
   employeeId: "11111111-1111-4111-8111-111111111111",
   leaveTypeId: "22222222-2222-4222-8222-222222222222",
-  startDate: "2026-10-01",
-  endDate: "2026-10-22",
+  startDate: "2099-12-01",
+  endDate: "2099-12-22",
   days: 22,
   reason: "",
 };
@@ -32,8 +33,8 @@ test("leave days are bounded by the range and half-day increments", () => {
   assert.equal(
     LeaveRequestSchema.safeParse({
       ...leaveBase,
-      startDate: "2026-10-01",
-      endDate: "2026-10-01",
+      startDate: "2099-12-01",
+      endDate: "2099-12-01",
       days: 0.5,
     }).success,
     true
@@ -44,19 +45,38 @@ test("leave days are bounded by the range and half-day increments", () => {
   );
 });
 
+test("leave requests cannot start before today", () => {
+  const today = todayInCompanyTimeZone();
+  const past = LeaveRequestSchema.safeParse({
+    ...leaveBase,
+    startDate: "2020-01-06",
+    endDate: "2020-01-07",
+    days: 2,
+  });
+  assert.equal(past.success, false);
+
+  const sameDay = LeaveRequestSchema.safeParse({
+    ...leaveBase,
+    startDate: today,
+    endDate: today,
+    days: 1,
+  });
+  assert.equal(sameDay.success, true);
+});
+
 test("leave requests cannot span calendar years or use invalid dates", () => {
   const crossYear = LeaveRequestSchema.safeParse({
     ...leaveBase,
-    startDate: "2026-12-30",
-    endDate: "2027-01-02",
+    startDate: "2099-12-30",
+    endDate: "2100-01-02",
     days: 4,
   });
   assert.equal(crossYear.success, false);
 
   const invalidDate = LeaveRequestSchema.safeParse({
     ...leaveBase,
-    startDate: "2026-02-31",
-    endDate: "2026-03-02",
+    startDate: "2099-02-31",
+    endDate: "2099-03-02",
     days: 2,
   });
   assert.equal(invalidDate.success, false);

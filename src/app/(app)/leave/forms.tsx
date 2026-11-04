@@ -47,12 +47,14 @@ function Field({
 export function LeaveRequestForm({
   leaveTypes,
   employees,
+  today,
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
 }: {
   leaveTypes: LeaveType[];
   employees?: Option[];
+  today: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
@@ -163,6 +165,7 @@ export function LeaveRequestForm({
                 onValueChange={(value) => setStartDate(value ?? "")}
                 placeholder="Pick a date"
                 invalid={Boolean(visibleState?.errors?.startDate)}
+                minDate={today}
               />
             </Field>
 
@@ -178,6 +181,7 @@ export function LeaveRequestForm({
                 onValueChange={(value) => setEndDate(value ?? "")}
                 placeholder="Pick a date"
                 invalid={Boolean(visibleState?.errors?.endDate)}
+                minDate={startDate || today}
               />
             </Field>
 

@@ -12,6 +12,7 @@ import { listEmployeeOptions } from "@/lib/employees";
 import { AlertCircleIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LeaveBalanceChart } from "@/components/leave-balance-chart";
+import { todayInCompanyTimeZone } from "@/lib/definitions";
 import { LeaveRequestForm } from "./forms";
 import { LeaveTable } from "./leave-table";
 
@@ -37,7 +38,8 @@ async function Content() {
   const manage = canManage(user.role);
 
   const myEmployeeId = await getMyEmployeeId(user.id);
-  const currentYear = new Date().getFullYear();
+  const today = todayInCompanyTimeZone();
+  const currentYear = Number(today.slice(0, 4));
 
   const requestsPromise = manage
     ? listLeaveRequests()
@@ -77,6 +79,7 @@ async function Content() {
           <LeaveRequestForm
             leaveTypes={leaveTypes}
             employees={manage ? employees : undefined}
+            today={today}
           />
         )}
       </div>

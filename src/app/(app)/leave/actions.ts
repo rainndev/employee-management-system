@@ -16,6 +16,7 @@ import {
   LeaveRequestNotFoundError,
   LeaveRequestNotPendingError,
   NotTeamMemberError,
+  PastLeaveDateError,
   SelfApprovalError,
   setLeaveStatus,
 } from "@/lib/leave";
@@ -97,9 +98,19 @@ export async function createLeaveRequestAction(
       return { message: error.message };
     }
 
+    if (error instanceof PastLeaveDateError) {
+      return { errors: { startDate: [error.message] } };
+    }
+
     // 23P01 = exclusion_violation from leave_request_no_overlap.
     if ((error as { code?: string }).code === "23P01") {
       return { errors: { startDate: [overlapMessage] } };
+    }
+
+    if ((error as { code?: string }).code === "23514") {
+      return {
+        errors: { startDate: ["Start date cannot be in the past."] },
+      };
     }
 
     if ((error as { code?: string }).code === "23503") {
@@ -153,6 +164,14 @@ export async function decideLeave(
         success: false,
         message:
           "Another pending or approved request now overlaps these dates.",
+      };
+    }
+
+    if ((error as { code?: string }).code === "23514") {
+      return {
+        success: false,
+        message:
+          "This request starts in the past and can no longer be approved.",
       };
     }
 

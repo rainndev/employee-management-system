@@ -34,6 +34,7 @@ export function DatePicker({
   placeholder = "Pick a date",
   clearable = false,
   invalid = false,
+  minDate,
 }: {
   name: string;
   id?: string;
@@ -43,6 +44,7 @@ export function DatePicker({
   placeholder?: string;
   clearable?: boolean;
   invalid?: boolean;
+  minDate?: string;
 }) {
   const [internalDate, setInternalDate] = useState<Date | undefined>(() =>
     parseISODate(defaultValue)
@@ -50,6 +52,7 @@ export function DatePicker({
   const isControlled = controlledValue !== undefined;
   const date = isControlled ? parseISODate(controlledValue) : internalDate;
   const [open, setOpen] = useState(false);
+  const minimumDate = parseISODate(minDate);
 
   function setDate(next: Date | undefined) {
     if (!isControlled) {
@@ -87,6 +90,7 @@ export function DatePicker({
           <Calendar
             mode="single"
             selected={date}
+            disabled={minimumDate ? { before: minimumDate } : undefined}
             onSelect={(next) => {
               setDate(next);
               setOpen(false);

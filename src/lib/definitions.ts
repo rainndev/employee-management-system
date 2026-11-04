@@ -1,5 +1,24 @@
 import * as z from "zod";
 
+// The database runs in Asia/Kuala_Lumpur. Decide "today" there rather than by
+// the browser/server clock, which can still be on yesterday in UTC between
+// 00:00 and 08:00 local time.
+export const COMPANY_TIME_ZONE = "Asia/Kuala_Lumpur";
+
+export function todayInCompanyTimeZone(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: COMPANY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 export const PasswordSchema = z
   .string()
   .min(8, { error: "Be at least 8 characters long." })
@@ -89,7 +108,7 @@ const optionalUuid = z
     error: "Choose a valid option.",
   });
 
-const todayISO = new Date().toISOString().slice(0, 10);
+const todayISO = todayInCompanyTimeZone();
 
 export const DepartmentSchema = z.object({
   name: z
@@ -184,6 +203,10 @@ export const LeaveRequestSchema = z
       .string()
       .trim()
       .max(500, { error: "Keep it under 500 characters." }),
+  })
+  .refine((value) => value.startDate >= todayInCompanyTimeZone(), {
+    error: "Start date cannot be in the past.",
+    path: ["startDate"],
   })
   .refine((value) => value.endDate >= value.startDate, {
     error: "End date must be on or after the start date.",

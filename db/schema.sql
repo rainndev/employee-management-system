@@ -279,6 +279,26 @@ DROP TRIGGER IF EXISTS set_updated_at ON leave_request;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON leave_request
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+-- Nobody may create or approve leave that starts in the past. Approved
+-- historical rows are untouched; updates that leave them approved will fail.
+CREATE OR REPLACE FUNCTION prevent_past_leave_request()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.status IN ('pending', 'approved')
+       AND NEW.start_date < CURRENT_DATE THEN
+        RAISE EXCEPTION 'leave request start date cannot be in the past'
+            USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS leave_request_no_past_dates ON leave_request;
+CREATE TRIGGER leave_request_no_past_dates
+    BEFORE INSERT OR UPDATE OF start_date, status ON leave_request
+    FOR EACH ROW EXECUTE FUNCTION prevent_past_leave_request();
+
 DROP TRIGGER IF EXISTS set_updated_at ON leave_balance;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON leave_balance
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();

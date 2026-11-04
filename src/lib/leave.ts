@@ -4,6 +4,7 @@ import type { PoolClient } from "pg";
 import { pool } from "@/lib/db";
 import { recordAudit } from "@/lib/audit";
 import { isWorkingEmployeeStatus } from "@/lib/employee-status";
+import { todayInCompanyTimeZone } from "@/lib/definitions";
 import type { Role } from "@/lib/roles";
 
 export type LeaveType = {
@@ -105,6 +106,13 @@ export class EmployeeNotEligibleError extends Error {
   constructor(message = "That employee is not active.") {
     super(message);
     this.name = "EmployeeNotEligibleError";
+  }
+}
+
+export class PastLeaveDateError extends Error {
+  constructor() {
+    super("Leave cannot start before today.");
+    this.name = "PastLeaveDateError";
   }
 }
 
@@ -349,6 +357,12 @@ export async function createLeaveRequest(
   input: LeaveRequestInput,
   actorUserId: string | null
 ) {
+  // Defense in depth: the schema already rejects this, but a future caller
+  // must not be able to insert a retroactive request.
+  if (input.startDate < todayInCompanyTimeZone()) {
+    throw new PastLeaveDateError();
+  }
+
   const year = Number(input.startDate.slice(0, 4));
 
   return withTransaction(async (client) => {
