@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS leave_type (
     updated_at      timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT leave_type_default_days_check CHECK (default_days >= 0),
     CONSTRAINT leave_type_eligible_gender_check
-        CHECK (eligible_gender IS NULL OR eligible_gender IN ('male', 'female', 'other'))
+        CHECK (eligible_gender IS NULL OR eligible_gender IN ('male', 'female'))
 );
 
 -- Names are unique among active leave types and are case-insensitive.

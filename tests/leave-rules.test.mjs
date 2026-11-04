@@ -167,4 +167,13 @@ test("leave types support up to 999 allocated days and gender eligibility", () =
     }).success,
     false
   );
+
+  assert.equal(
+    LeaveTypeSchema.safeParse({
+      name: "Maternity",
+      defaultDays: "90",
+      eligibleGender: "other",
+    }).success,
+    false
+  );
 });

@@ -177,7 +177,7 @@ export const LeaveTypeSchema = z.object({
     .refine((value) => value <= 999, {
       error: "Keep it at 999 days or fewer.",
     }),
-  eligibleGender: z.enum(["", "male", "female", "other"], {
+  eligibleGender: z.enum(["", "male", "female"], {
     error: "Choose a gender eligibility.",
   }),
 });

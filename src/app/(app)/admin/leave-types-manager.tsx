@@ -55,7 +55,6 @@ const GENDER_OPTIONS = [
   { value: NONE_VALUE, label: "All genders" },
   { value: "female", label: "Female only" },
   { value: "male", label: "Male only" },
-  { value: "other", label: "Other only" },
 ];
 
 function Field({

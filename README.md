@@ -155,7 +155,7 @@ Every clause in the rubric is used in application code:
 - change a user's role
 - enable or disable an account
 - **set a new password for a user** (bcrypt-hashed, same rules as signup: 8 to 72 characters with a letter and a number); this signs out the user's existing sessions
-- **manage leave types** — create custom types, set up to 999 allocated days, restrict eligibility to all/male/female/other, edit the name/allowance/paid flag, and soft-delete them; existing requests and history are preserved. Gender-restricted types are hidden from ineligible employees in the request form and rejected server-side.
+- **manage leave types** — create custom types, set up to 999 allocated days, restrict eligibility to all/male/female, edit the name/allowance/paid flag, and soft-delete them; existing requests and history are preserved. Gender-restricted types are hidden from ineligible employees in the request form and rejected server-side.
 
 An admin cannot edit their own row. Everyone can change their own password from **Account → Change password**, which signs out other sessions. Share a reset password with the user directly — there is no email delivery.
 
